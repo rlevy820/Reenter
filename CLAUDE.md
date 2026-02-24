@@ -126,28 +126,40 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ---
 
-## Mode 1 — Just Run It (Design Decisions Locked)
+## Run Mode — Walkthrough Design (Locked)
 
-**Goal:** Lowest friction path to just seeing the project again. Not setting it up properly, not production ready. Just — what does this look like, can I poke around it.
+**Goal:** Lowest friction path to just seeing the project again. Not production ready. Just — what does this look like, can I poke around it.
 
 **How it works:**
-- Tool scans the project and does all the technical thinking under the hood
+- Tool does all the technical thinking under the hood
 - User never sees jargon — no "package.json", "env vars", "npm install"
-- Tool figures out the complexity, then surfaces just enough to keep the user informed and in control
-- Always specific to *this* project — never generic descriptions
+- Chat mode once walkthrough starts — text input always available, agent leads but adapts
+- Consent before every action — always shows what it's about to do and why
+- Hybrid UI — select menus for structured choices, free text always available
 
-**The flow:**
-1. Tool scans silently (Haiku — cheap)
-2. Shows plain english summary — always starts with "This looks like..."
-3. Fixed menu: Browse / Run / MVP / Ship — user picks one
-4. Tool generates 2-5 high level steps for this project + chosen mode (Haiku)
-5. Tool zooms into step 1 and walks through it (Sonnet — reasoning heavy)
-6. One step at a time, human in the loop, until done
+**The full flow:**
+1. Scout: scan silently, show "This looks like..." summary (Haiku)
+2. Menu: What's next — Browse / Run / MVP / Ship
+3. Walkthrough starts:
+   a. **Save starting point** — git pre-flight, always first
+   b. **Pre-flight assessment** — what does this project actually need to run?
+   c. **Non-technical questions** — things only the user knows
+   d. **Execution loop** — one step at a time, chat mode, consent before action
 
-**Two-level planning model (GPS metaphor):**
-- **Step generation (one call after mode pick):** produces 2-5 high level steps specific to this project and mode. Like seeing the route before driving.
-- **Execution phase (one call per step):** zooms into the current step only. Figures out exactly what it means for this specific project — what command, what might go wrong, what done looks like.
-- Steps stay high level in the map. Detail only appears when you're on that step.
+**Dependency tiers (Run mode):**
+- **Tier 1 — hard blockers:** app won't start. Must resolve. (missing runtime, database not running, env var that crashes on boot)
+- **Tier 2 — soft blockers:** app starts but a feature breaks. Explain and skip for Run. (Stripe, email, third-party APIs)
+- **Tier 3 — silent fails:** app works, one page errors. Note it and move on.
+
+**Git pre-flight (locked):**
+- Always runs first, always shows "Saving your starting point" spinner
+- No git → `git init` + commit everything (creates `.gitignore` if missing)
+- Loose ends → silently commit everything
+- Already clean → empty commit (`--allow-empty`)
+- Commit message: `"saving starting point before reenter"`
+- No branch created — the commit IS the restore point. User can always return to it.
+- Only treats git as project's own if repo root === project path (parent repos ignored)
+- Applies to Run, MVP, and Ship — not Browse
 
 **Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never. Honest always.
 
@@ -167,14 +179,14 @@ src/
     files.ts        — reads key files (package.json, README, etc.)
     analyze.ts      — Haiku builds the full high level map
 
-  briefing/         — shows the user what they're getting into before step 1
-    precheck.ts     — runs environment checks with user consent
-    present.ts      — presents the pre-flight picture, gets confirmation
+  briefing/         — parked. orientation moment lives here (interview.ts), not yet wired in
+    interview.ts    — generates one plain english sentence before step 1 (Sonnet)
 
   walkthrough/      — guided step-by-step execution
-    steps.ts        — manages step progression and state
-    check.ts        — runs commands, captures output, reports back
-    respond.ts      — handles what the user says at each step
+    git.ts          — save starting point before anything changes (BUILT)
+    steps.ts        — manages step progression and state (stub)
+    check.ts        — runs commands, captures output, reports back (stub)
+    respond.ts      — handles what the user says at each step (stub)
 ```
 
 **Why this structure:** Each folder has one job. Named after what they mean in the product, not what they do technically. Scout, Briefing, Walkthrough — anyone can navigate this at 2am.
@@ -224,9 +236,12 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 - [x] Technical stack decided
 - [x] Scout phase — scan + summary + step generation
 - [x] Custom terminal UI (prompt.ts) — inline description on hover
-- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest (49 tests)
+- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest (54 tests)
 - [x] CI/CD — GitHub Actions, runs build + lint + tests on push/PR
-- [ ] Walkthrough phase — steps.ts, check.ts, respond.ts — **this is next**
+- [x] Walkthrough step 1 — git pre-flight, "Saving your starting point" (BUILT)
+- [ ] Walkthrough step 2 — pre-flight assessment (what does this project need to run?)
+- [ ] Walkthrough step 3 — non-technical questions (things only the user knows)
+- [ ] Walkthrough step 4 — execution loop (chat mode, consent before action)
 - [ ] Browse, MVP, Ship modes (currently "coming soon")
 - [ ] First-run API key setup flow
 - [ ] Global install (`reenter` from anywhere)
@@ -235,4 +250,4 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Next Step
 
-Build the walkthrough phase. This is the step-by-step execution loop — the core of Run mode. The execution pattern is locked: explain why → show the command → get consent → run it → read the real output → move forward only when user confirms.
+Walkthrough step 2: pre-flight assessment. The AI reads the project and surfaces what it actually needs to run — in plain english, sorted by tier. Hard blockers first, soft blockers noted but skippable for Run mode.
