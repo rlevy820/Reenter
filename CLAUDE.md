@@ -55,21 +55,24 @@ The user has been burned by AI that hears a problem and immediately jumps to act
 
 ---
 
-## The Three Modes
+## The Four Modes
 
-1. **Just run it** — figure out what it would take to run this locally right now. What is it, what does it run on, does it have a db, does it need env vars, what's the MVP to get it running.
-2. **Get back in** — reconstruct enough momentum to start developing again. Find the best door back in, not a full whiteboard.
-3. **Refactor and clean it up** — restructure for readability and future building. Split monster files, rename folders, add READMEs, requirements.txt, simple docs. Same functionality, better skeleton.
+Fixed menu — never AI-derived. Always the same four options in this order:
+
+1. **Browse** — understand it like it was built yesterday. Find the conceptual path from A to Z.
+2. **Run** — see it running live on your machine. Lowest friction path to just seeing it alive again.
+3. **MVP** — find the fastest path to real users. Local to something others can actually use.
+4. **Ship** — clean it up and take it all the way. Modernize, fix issues, deploy properly.
 
 ---
 
 ## The First Moment
 
-Tool reads the project, outputs a 1-2 sentence plain english summary of what it is, then asks:
+Tool reads the project, shows a plain english summary (always starts with "This looks like..."), then asks:
 
-**What do you want to do with it?**
+**What's next:**
 
-Via interactive terminal prompt (arrow keys, radio buttons, "Other" option for free text). The answer to this shapes everything that follows.
+Fixed menu — arrow keys, four options. No free text. The answer to this shapes everything that follows.
 
 ---
 
@@ -135,40 +138,16 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 **The flow:**
 1. Tool scans silently (Haiku — cheap)
-2. Outputs a plain english summary of what the project is
-3. Presents 1-3 derived options with high level step map already attached
-4. User picks one
+2. Shows plain english summary — always starts with "This looks like..."
+3. Fixed menu: Browse / Run / MVP / Ship — user picks one
+4. Tool generates 2-5 high level steps for this project + chosen mode (Haiku)
 5. Tool zooms into step 1 and walks through it (Sonnet — reasoning heavy)
 6. One step at a time, human in the loop, until done
 
 **Two-level planning model (GPS metaphor):**
-- **Analysis phase (one call):** produces the full high level map — summary, options, and all steps end to end for each option. Like seeing the whole route before driving.
+- **Step generation (one call after mode pick):** produces 2-5 high level steps specific to this project and mode. Like seeing the route before driving.
 - **Execution phase (one call per step):** zooms into the current step only. Figures out exactly what it means for this specific project — what command, what might go wrong, what done looks like.
 - Steps stay high level in the map. Detail only appears when you're on that step.
-
-**JSON shape from analysis:**
-```json
-{
-  "summary": "...",
-  "options": [
-    {
-      "title": "Run it",
-      "description": "get it working on your computer, ~20 min",
-      "value": "run",
-      "steps": [
-        "Install the project's dependencies",
-        "Set up the database",
-        "Start the app and open it in your browser"
-      ]
-    }
-  ]
-}
-```
-
-**Options are derived, not templated:**
-- No hardcoded slots — Claude figures out what's actually possible first
-- Blocked paths get flagged honestly
-- 1 to 3 options only. Never pad.
 
 **Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never. Honest always.
 
@@ -228,7 +207,6 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Known Issues / Polish Later
 
-- Summary output occasionally still uses light jargon ("server", "database") — fixed in analyze.ts prompt but needs testing
 - API key setup flow not built yet — right now the key lives in Reenter's own `.env`. Future: first-run setup asks the user for their key and stores it in `~/.config/reenter/`.
 
 ---
@@ -237,22 +215,19 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 - [x] Problem defined
 - [x] Core principles defined
-- [x] Three modes defined
-- [x] First moment designed
+- [x] Four modes defined — Browse / Run / MVP / Ship (fixed menu, locked copy)
+- [x] First moment designed — summary always starts "This looks like...", prompt is "What's next:"
 - [x] Voice and tone defined
 - [x] README written
 - [x] Git initialized
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
-- [x] Mode 1 scan + derived options working
+- [x] Scout phase — scan + summary + step generation
 - [x] Custom terminal UI (prompt.ts) — inline description on hover
-- [x] Two-level planning model — high level map + step-by-step execution
-- [x] Project refactored into scout/briefing/walkthrough + session spine
-- [x] Briefing phase — presentation, one question, synthesis, confirm
-- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest infrastructure
-- [ ] Walkthrough phase — check.ts, respond.ts, steps.ts — **this is next**
-- [ ] Mode 2 built
-- [ ] Mode 3 built
+- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest (49 tests)
+- [x] CI/CD — GitHub Actions, runs build + lint + tests on push/PR
+- [ ] Walkthrough phase — steps.ts, check.ts, respond.ts — **this is next**
+- [ ] Browse, MVP, Ship modes (currently "coming soon")
 - [ ] First-run API key setup flow
 - [ ] Global install (`reenter` from anywhere)
 
@@ -260,4 +235,4 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Next Step
 
-Build the walkthrough phase. This is the step-by-step execution loop — the core of Mode 1. Each step gets one AI call (Sonnet) that figures out exactly what it means for this specific project. The execution pattern is locked: explain why → show the command → get consent → run it → read the real output → move forward only when user confirms.
+Build the walkthrough phase. This is the step-by-step execution loop — the core of Run mode. The execution pattern is locked: explain why → show the command → get consent → run it → read the real output → move forward only when user confirms.
