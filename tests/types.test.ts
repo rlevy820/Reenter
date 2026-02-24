@@ -3,49 +3,44 @@ import {
   AnalysisSchema,
   BriefingResponseSchema,
   QuestionSchema,
+  StepsSchema,
   SynthesisResponseSchema,
 } from '../src/types.js';
 
 // ─── AnalysisSchema ───────────────────────────────────────────────────────────
 
 describe('AnalysisSchema', () => {
-  const validOption = {
-    title: 'Run it',
-    description: 'get it running, ~20 min',
-    value: 'run',
-    steps: ['Install dependencies', 'Start the app'],
-  };
-
-  it('parses a valid analysis', () => {
-    const input = { summary: 'A todo app built with React.', options: [validOption] };
-    expect(() => AnalysisSchema.parse(input)).not.toThrow();
+  it('parses a valid summary', () => {
+    expect(() => AnalysisSchema.parse({ summary: 'A todo app built with React.' })).not.toThrow();
   });
 
   it('throws on missing summary', () => {
-    expect(() => AnalysisSchema.parse({ options: [validOption] })).toThrow();
+    expect(() => AnalysisSchema.parse({})).toThrow();
   });
 
-  it('throws on missing options', () => {
-    expect(() => AnalysisSchema.parse({ summary: 'A todo app.' })).toThrow();
+  it('throws on non-string summary', () => {
+    expect(() => AnalysisSchema.parse({ summary: 42 })).toThrow();
+  });
+});
+
+// ─── StepsSchema ──────────────────────────────────────────────────────────────
+
+describe('StepsSchema', () => {
+  it('parses a valid steps array', () => {
+    const input = { steps: ['Install dependencies', 'Start the app'] };
+    expect(() => StepsSchema.parse(input)).not.toThrow();
+  });
+
+  it('parses an empty steps array', () => {
+    expect(() => StepsSchema.parse({ steps: [] })).not.toThrow();
+  });
+
+  it('throws on missing steps', () => {
+    expect(() => StepsSchema.parse({})).toThrow();
   });
 
   it('throws when a step is not a string', () => {
-    const bad = { ...validOption, steps: [123, 'Start the app'] };
-    expect(() => AnalysisSchema.parse({ summary: 'A todo app.', options: [bad] })).toThrow();
-  });
-
-  it('throws when option is missing title', () => {
-    const bad = { description: 'x', value: 'x', steps: ['do thing'] };
-    expect(() => AnalysisSchema.parse({ summary: 'x', options: [bad] })).toThrow();
-  });
-
-  it('parses multiple options', () => {
-    const input = {
-      summary: 'A web app.',
-      options: [validOption, { ...validOption, value: 'browse', title: 'Browse' }],
-    };
-    const result = AnalysisSchema.parse(input);
-    expect(result.options).toHaveLength(2);
+    expect(() => StepsSchema.parse({ steps: [1, 'Start the app'] })).toThrow();
   });
 });
 
@@ -116,7 +111,9 @@ describe('BriefingResponseSchema', () => {
 describe('SynthesisResponseSchema', () => {
   it('parses a valid synthesis', () => {
     expect(() =>
-      SynthesisResponseSchema.parse({ synthesis: 'Since it was working before, step 1 is getting your dependencies in order.' })
+      SynthesisResponseSchema.parse({
+        synthesis: 'Since it was working before, step 1 is getting your dependencies in order.',
+      })
     ).not.toThrow();
   });
 

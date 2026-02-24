@@ -1,10 +1,26 @@
-// scout/analyze.ts — sends project context to Claude Haiku and gets back the full map.
-// Haiku is used here because this is a read and classify task — fast and cheap.
-// Returns: plain english summary, derived options, and high level steps for each option.
-// This is the GPS route — the whole journey visible before a single step is taken.
+// scout/analyze.ts — two focused AI calls, both using Haiku (fast, cheap).
+//
+// analyzeProject — reads the project and returns a plain english summary.
+//   Called once, before the menu. No options, no steps — just: what is this?
+//
+// generateSteps — called after the user picks a mode.
+//   Returns 2-5 high level steps specific to this project and chosen mode.
+//   This is the GPS route for the chosen path.
 
 import type Anthropic from '@anthropic-ai/sdk';
-import { type Analysis, AnalysisSchema } from '../types.js';
+import { type Analysis, AnalysisSchema, StepsSchema } from '../types.js';
+
+const MODEL = 'claude-haiku-4-5-20251001';
+
+const MODE_INTENT: Record<string, string> = {
+  run: 'run this project locally — the cheapest, fastest path to seeing it alive again. No production concerns, no polish. Just: what does it take to get this running on their machine?',
+  browse:
+    'understand this codebase — find the single conceptual path from A to Z that gives the clearest picture of how it works.',
+  mvp: 'get this in front of real users — the fastest, cheapest path from local to something others can actually use.',
+  ship: 'modernize, fix issues, and deploy this properly — clean it up and take it all the way.',
+};
+
+// ─── Summary ─────────────────────────────────────────────────────────────────
 
 export async function analyzeProject(
   client: Anthropic,
@@ -12,14 +28,14 @@ export async function analyzeProject(
   keyFiles: string
 ): Promise<Analysis> {
   const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2048,
+    model: MODEL,
+    max_tokens: 256,
     system:
       'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
     messages: [
       {
         role: 'user',
-        content: `A self-taught developer wants to re-engage with an old project they built and forgot about. Your job is to figure out what this project is, what realistic paths exist, and map out the high level steps for each path end to end.
+        content: `What is this project? Describe it in 1-2 plain english sentences. No jargon. What does it do, not how it's built.
 
 FILE STRUCTURE:
 ${structure}
@@ -27,37 +43,8 @@ ${structure}
 KEY FILE CONTENTS:
 ${keyFiles || 'No key files found.'}
 
-Think through:
-- What type of project is this?
-- What does it actually need to run?
-- What are the honest, realistic paths available right now?
-- For each path, what are the 2-5 high level steps to complete it?
-
-Return this exact JSON shape — raw JSON only:
-{
-  "summary": "1-2 sentences in plain english. No jargon. What is this and what does it do?",
-  "options": [
-    {
-      "title": "1-2 word label",
-      "description": "one short phrase, specific to this project",
-      "value": "option_1",
-      "steps": [
-        "High level step — plain english, no jargon, no commands",
-        "High level step — plain english, no jargon, no commands"
-      ]
-    }
-  ]
-}
-
-Rules:
-- Order options from least effort at top to most effort at bottom
-- title: 1-2 words max (e.g. "Browse", "Run it", "Ship it")
-- description: one short phrase, no tech names, say how long if setup needed
-- steps: 2 to 5 per option, high level only — no commands, no file names yet
-- Never use technology names (no PHP, MySQL, Node, Python, React, server, database)
-- Instead of "server" say "something that hosts your pages locally"
-- Instead of "database" say "a place that stores your data"
-- 1 to 3 options only — never pad`,
+Return raw JSON only:
+{ "summary": "..." }`,
       },
       {
         role: 'assistant',
@@ -70,4 +57,55 @@ Rules:
   if (!block || block.type !== 'text') throw new Error('Expected text response from AI');
 
   return AnalysisSchema.parse(JSON.parse(`{${block.text}`));
+}
+
+// ─── Steps ────────────────────────────────────────────────────────────────────
+
+export async function generateSteps(
+  client: Anthropic,
+  modeValue: string,
+  structure: string,
+  keyFiles: string
+): Promise<string[]> {
+  const intent = MODE_INTENT[modeValue];
+  if (!intent) throw new Error(`Unknown mode: ${modeValue}`);
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system:
+      'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
+    messages: [
+      {
+        role: 'user',
+        content: `A self-taught developer wants to ${intent}
+
+FILE STRUCTURE:
+${structure}
+
+KEY FILE CONTENTS:
+${keyFiles || 'No key files found.'}
+
+What are the 2-5 high level steps to do this for this specific project?
+
+Rules:
+- Steps are high level only — no commands, no file names yet
+- Plain english, no jargon
+- Specific to this actual project — never generic
+- 2 to 5 steps, never pad
+
+Return raw JSON only:
+{ "steps": ["Step one", "Step two", "..."] }`,
+      },
+      {
+        role: 'assistant',
+        content: '{',
+      },
+    ],
+  });
+
+  const block = response.content[0];
+  if (!block || block.type !== 'text') throw new Error('Expected text response from AI');
+
+  return StepsSchema.parse(JSON.parse(`{${block.text}`)).steps;
 }

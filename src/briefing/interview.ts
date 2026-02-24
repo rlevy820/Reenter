@@ -34,9 +34,9 @@ const VOICE = `You are talking to a self-taught developer who builds things to l
 
 async function generateBriefing(client: Anthropic, session: Session) {
   const { summary, structure, keyFiles } = session.project;
-  const { chosenOption } = session.plan;
+  const { chosenMode } = session.plan;
 
-  if (!chosenOption) throw new Error('No option chosen before briefing');
+  if (!chosenMode) throw new Error('No mode chosen before briefing');
 
   const stream = client.messages.stream({
     model: MODEL,
@@ -53,7 +53,7 @@ You are helping a self-taught developer re-engage with an old project.
 They already saw this summary — do not repeat it:
 "${summary}"
 
-Their chosen path: "${chosenOption.title}" — ${chosenOption.description}
+Their chosen path: "${chosenMode.title}" — ${chosenMode.description}
 
 FILE STRUCTURE:
 ${structure}
@@ -93,11 +93,10 @@ Rules:
 // ─── Generate synthesis ───────────────────────────────────────────────────────
 
 async function generateSynthesis(client: Anthropic, session: Session): Promise<string> {
-  const { chosenOption } = session.plan;
   const { questions, answers } = session.briefing;
   const q1 = questions[0];
 
-  if (!chosenOption || !q1) throw new Error('Missing plan or question for synthesis');
+  if (!session.plan.chosenMode || !q1) throw new Error('Missing plan or question for synthesis');
 
   const stream = client.messages.stream({
     model: MODEL,
@@ -112,7 +111,7 @@ async function generateSynthesis(client: Anthropic, session: Session): Promise<s
 One sentence. Acknowledge what they told you, then frame what step 1 is about. Don't re-summarize the project — they know what it is. Forward-facing, specific, warm.
 
 WHAT THEY SAID: "${answers[q1.id]}"
-STEP 1: "${chosenOption.steps[0]}"
+STEP 1: "${session.plan.steps[0]}"
 
 Return raw JSON only:
 { "synthesis": "..." }`,

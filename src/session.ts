@@ -3,9 +3,15 @@
 // Nothing meaningful happens outside of it.
 // Designed to be saveable to disk later without restructuring.
 
-import type { CheckEntry, HistoryEntry, Mode, Session } from './types.js';
+import type { CheckEntry, HistoryEntry, Session, SessionMode } from './types.js';
 
-export function createSession({ projectPath, mode }: { projectPath: string; mode: Mode }): Session {
+export function createSession({
+  projectPath,
+  mode,
+}: {
+  projectPath: string;
+  mode: SessionMode;
+}): Session {
   return {
     meta: {
       startedAt: new Date().toISOString(),
@@ -19,8 +25,7 @@ export function createSession({ projectPath, mode }: { projectPath: string; mode
       summary: null,
     },
     plan: {
-      options: null,
-      chosenOption: null,
+      chosenMode: null,
       steps: [],
       currentStep: 0,
       completedSteps: [],

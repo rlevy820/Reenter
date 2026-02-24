@@ -2,19 +2,16 @@ import { z } from 'zod';
 
 // ─── AI Response Schemas ──────────────────────────────────────────────────────
 
-export const OptionSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  value: z.string(),
-  steps: z.array(z.string()),
-});
-export type Option = z.infer<typeof OptionSchema>;
-
+// Summary only — options are fixed, not AI-derived
 export const AnalysisSchema = z.object({
   summary: z.string(),
-  options: z.array(OptionSchema),
 });
 export type Analysis = z.infer<typeof AnalysisSchema>;
+
+// Steps — generated after the user picks a mode, scoped to that mode
+export const StepsSchema = z.object({
+  steps: z.array(z.string()),
+});
 
 export const QuestionSchema = z.object({
   id: z.string(),
@@ -34,9 +31,18 @@ export const SynthesisResponseSchema = z.object({
   synthesis: z.string(),
 });
 
+// ─── Mode ─────────────────────────────────────────────────────────────────────
+
+// A menu item — fixed, not AI-derived
+export interface AppMode {
+  title: string;
+  description: string;
+  value: string;
+}
+
 // ─── Session ──────────────────────────────────────────────────────────────────
 
-export type Mode = 'run' | 'reenter' | 'refactor';
+export type SessionMode = 'run' | 'browse' | 'mvp' | 'ship';
 
 export interface HistoryEntry {
   type: 'ai' | 'user' | 'check' | 'system';
@@ -54,7 +60,7 @@ export interface CheckEntry {
 export interface Session {
   meta: {
     startedAt: string;
-    mode: Mode;
+    mode: SessionMode;
     projectPath: string;
     projectName: string;
   };
@@ -64,8 +70,7 @@ export interface Session {
     summary: string | null;
   };
   plan: {
-    options: Option[] | null;
-    chosenOption: Option | null;
+    chosenMode: AppMode | null;
     steps: string[];
     currentStep: number;
     completedSteps: number[];

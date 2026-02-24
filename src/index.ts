@@ -3,8 +3,9 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { runInterview } from './briefing/interview.js';
+import { MODES } from './options.js';
 import reenterSelect, { formatTextBlock, spin, withMargin } from './prompt.js';
-import { analyzeProject } from './scout/analyze.js';
+import { analyzeProject, generateSteps } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
 import { createSession, logHistory } from './session.js';
@@ -22,7 +23,7 @@ async function main() {
   // Initialize the session — the spine that holds everything
   const session = createSession({ projectPath, mode: 'run' });
 
-  // Scout phase — understand the project
+  // Scout phase — read the project and get a plain english summary
   const analysis = await spin('Reentering', 'Reentering', async () => {
     const structure = scanDirectory(projectPath).join('\n');
 
@@ -41,27 +42,45 @@ async function main() {
   });
 
   session.project.summary = analysis.summary;
-  session.plan.options = analysis.options;
 
   // Show summary
   process.stdout.write(formatTextBlock(session.project.summary));
 
-  // Let user pick a path
+  // Fixed menu — always the same four options
   const selectedValue = await reenterSelect({
-    message: "What's next:",
-    choices: session.plan.options.map((opt) => ({
-      title: opt.title,
-      value: opt.value,
-      description: opt.description,
+    message: 'What do you want to do with it:',
+    choices: MODES.map((m) => ({
+      title: m.title,
+      value: m.value,
+      description: m.description,
     })),
   });
 
-  // Lock in the chosen path
-  const chosen = session.plan.options.find((o) => o.value === selectedValue);
-  if (!chosen) throw new Error(`Unknown option: ${selectedValue}`);
-  session.plan.chosenOption = chosen;
-  session.plan.steps = chosen.steps;
-  logHistory(session, 'user', `Chose: ${chosen.title}`);
+  const chosenMode = MODES.find((m) => m.value === selectedValue);
+  if (!chosenMode) throw new Error(`Unknown mode: ${selectedValue}`);
+
+  session.plan.chosenMode = chosenMode;
+  logHistory(session, 'user', `Chose: ${chosenMode.title}`);
+
+  // Coming soon — only Run it is built
+  if (selectedValue !== 'run') {
+    process.stdout.write(formatTextBlock(`${chosenMode.title} is coming soon.`));
+    process.exit(0);
+  }
+
+  session.meta.mode = 'run';
+
+  // Generate steps for the chosen mode — scoped to this specific project
+  const steps = await spin('mapping it out', 'mapped it out', () =>
+    generateSteps(
+      client,
+      selectedValue,
+      session.project.structure ?? '',
+      session.project.keyFiles ?? ''
+    )
+  );
+
+  session.plan.steps = steps;
 
   process.stdout.write('\n');
 

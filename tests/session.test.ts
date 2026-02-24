@@ -11,13 +11,12 @@ describe('createSession', () => {
 
   it('handles trailing slash in path', () => {
     const session = createSession({ projectPath: '/home/user/my-project/', mode: 'run' });
-    // split('/').pop() on a trailing slash returns ''  — falls back to full path
     expect(session.meta.projectPath).toBe('/home/user/my-project/');
   });
 
   it('sets mode correctly', () => {
-    const session = createSession({ projectPath: '/foo/bar', mode: 'reenter' });
-    expect(session.meta.mode).toBe('reenter');
+    const session = createSession({ projectPath: '/foo/bar', mode: 'browse' });
+    expect(session.meta.mode).toBe('browse');
   });
 
   it('records a start timestamp', () => {
@@ -37,8 +36,7 @@ describe('createSession', () => {
 
   it('starts with an empty plan', () => {
     const session = createSession({ projectPath: '/foo/bar', mode: 'run' });
-    expect(session.plan.options).toBeNull();
-    expect(session.plan.chosenOption).toBeNull();
+    expect(session.plan.chosenMode).toBeNull();
     expect(session.plan.steps).toEqual([]);
     expect(session.plan.currentStep).toBe(0);
     expect(session.plan.completedSteps).toEqual([]);
