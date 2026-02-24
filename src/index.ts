@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { MODES } from './options.js';
 import reenterSelect, { formatTextBlock, spin, withMargin } from './prompt.js';
-import { analyzeProject, generateSteps } from './scout/analyze.js';
+import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
 import { createSession, logHistory } from './session.js';
@@ -68,18 +68,6 @@ async function main() {
   }
 
   session.meta.mode = 'run';
-
-  // Generate steps for the chosen mode — scoped to this specific project
-  const steps = await spin('mapping it out', 'mapped it out', () =>
-    generateSteps(
-      client,
-      selectedValue,
-      session.project.structure ?? '',
-      session.project.keyFiles ?? ''
-    )
-  );
-
-  session.plan.steps = steps;
 
   // Walkthrough phase — coming next
   process.stdout.write(formatTextBlock('\x1b[90mWalkthrough coming next.\x1b[0m'));
