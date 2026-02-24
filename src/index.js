@@ -2,7 +2,7 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
-import { select } from '@inquirer/select';
+import reenterSelect from './prompt.js';
 import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
@@ -144,10 +144,10 @@ async function main() {
   console.log(analysis.summary);
   console.log();
 
-  const action = await select({
+  const action = await reenterSelect({
     message: "What's next:",
     choices: analysis.options.map(opt => ({
-      name: opt.title,
+      title: opt.title,
       value: opt.value,
       description: opt.description
     }))
