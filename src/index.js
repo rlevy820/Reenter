@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
 import { select } from '@inquirer/select';
+import ora from 'ora';
 import fs from 'fs';
 import path from 'path';
 
@@ -119,12 +120,11 @@ async function main() {
     ? path.resolve(process.argv[2])
     : process.cwd();
 
-  // Animated "Reentering..." spinner while Claude reads the project
-  let dotCount = 0;
-  const spinner = setInterval(() => {
-    dotCount = (dotCount % 3) + 1;
-    process.stdout.write(`\rReentering${'.'.repeat(dotCount)}   `);
-  }, 400);
+  const spinner = ora({
+    text: 'Reentering',
+    color: 'cyan',
+    spinner: 'dots'
+  }).start();
 
   let analysis;
   try {
@@ -132,16 +132,13 @@ async function main() {
   const structure = scanDirectory(projectPath).join('\n');
 
   if (!structure) {
-    clearInterval(spinner);
-    process.stdout.write('\r');
-    console.log("This folder looks empty. Point reenter at a project folder.");
+    spinner.fail('This folder looks empty. Point reenter at a project folder.');
     process.exit(1);
   }
 
     analysis = await analyzeProject(projectPath, structure);
   } finally {
-    clearInterval(spinner);
-    process.stdout.write('\r' + ' '.repeat(20) + '\r');
+    spinner.stop();
   }
 
   console.log(analysis.summary);
