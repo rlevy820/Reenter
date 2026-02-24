@@ -129,25 +129,43 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 - Always specific to *this* project — never generic descriptions
 
 **The flow:**
-1. Tool scans silently
+1. Tool scans silently (Haiku — cheap)
 2. Outputs a plain english summary of what the project is
-3. Claude reasons about what the actual realistic paths are for this specific project — not fixed slots
-4. Presents 1-3 options depending on what's genuinely possible
-5. User picks one, tool walks them through it step by step
+3. Presents 1-3 derived options with high level step map already attached
+4. User picks one
+5. Tool zooms into step 1 and walks through it (Sonnet — reasoning heavy)
+6. One step at a time, human in the loop, until done
+
+**Two-level planning model (GPS metaphor):**
+- **Analysis phase (one call):** produces the full high level map — summary, options, and all steps end to end for each option. Like seeing the whole route before driving.
+- **Execution phase (one call per step):** zooms into the current step only. Figures out exactly what it means for this specific project — what command, what might go wrong, what done looks like.
+- Steps stay high level in the map. Detail only appears when you're on that step.
+
+**JSON shape from analysis:**
+```json
+{
+  "summary": "...",
+  "options": [
+    {
+      "title": "Run it",
+      "description": "get it working on your computer, ~20 min",
+      "value": "run",
+      "steps": [
+        "Install the project's dependencies",
+        "Set up the database",
+        "Start the app and open it in your browser"
+      ]
+    }
+  ]
+}
+```
 
 **Options are derived, not templated:**
-- No hardcoded "simple / full / share" slots
-- Claude figures out what's actually possible first, then surfaces those as options
-- Blocked paths get flagged honestly ("this needs a VR headset — want instructions or just browse the code?")
-- If there's only one real option, show one. If there are three, show three. Never pad.
+- No hardcoded slots — Claude figures out what's actually possible first
+- Blocked paths get flagged honestly
+- 1 to 3 options only. Never pad.
 
-**Examples of how options change by project type:**
-- Static website → "Open it in your browser right now" (one option)
-- PHP app with database → "Browse the code" or "Set the whole thing up (20 min)" (two options)
-- VR app → "This needs a headset — want setup instructions or just explore the code?" (two options)
-- Python data notebook → "Run it and see the output" or "Just read through it" (two options)
-
-**Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never. Honest always — never pretend a path exists when it doesn't.
+**Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never. Honest always.
 
 ---
 
