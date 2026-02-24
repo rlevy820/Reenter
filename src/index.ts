@@ -8,6 +8,7 @@ import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
 import { createSession, logHistory } from './session.js';
+import { saveStartingPoint } from './walkthrough/git.js';
 
 // Always load .env from the Reenter project folder, regardless of where the user runs it from
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -70,8 +71,8 @@ async function main() {
 
   session.meta.mode = 'run';
 
-  // Walkthrough phase — coming next
-  process.stdout.write(formatTextBlock('\x1b[90mWalkthrough coming next.\x1b[0m'));
+  // Walkthrough — step 1: save starting point before anything changes
+  await saveStartingPoint(projectPath);
 }
 
 main();
