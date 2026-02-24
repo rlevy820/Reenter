@@ -100,9 +100,11 @@ Via interactive terminal prompt (arrow keys, radio buttons, "Other" option for f
 
 These are commands Ryan calls during a session to trigger specific actions. Claude can suggest them but never calls them unilaterally.
 
-- `/checkpoint` — stop, reflect, update CLAUDE.md with what was just decided
-- `/decide` — we've been discussing long enough, time to make a call and document it
-- `/offtrack` — we're drifting from the north star, pull back
+- `-cp` — checkpoint: stop, reflect, update CLAUDE.md with what was just decided
+- `-decide` — we've been discussing long enough, time to make a call and document it
+- `-offtrack` — we're drifting from the north star, pull back
+
+Note: slash commands are reserved by Claude Code. All Reenter meta-commands use `-` prefix.
 
 Claude should *suggest* these when it notices a checkpoint moment, a decision lingering, or drift happening — but Ryan pulls the trigger.
 
