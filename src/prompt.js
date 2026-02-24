@@ -13,7 +13,7 @@ import {
   isDownKey,
   isEnterKey,
 } from '@inquirer/core';
-import { cursorHide } from '@inquirer/ansi';
+import { cursorHide, cursorShow } from '@inquirer/ansi';
 
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 const dim  = (s) => `\x1b[90m${s}\x1b[0m`;
@@ -60,3 +60,28 @@ const reenterSelect = createPrompt((config, done) => {
 });
 
 export default reenterSelect;
+
+// Free-text input prompt. Used for open-ended interview questions.
+// Matches the visual style of reenterSelect.
+export const reenterInput = createPrompt((config, done) => {
+  const { message } = config;
+  const [status, setStatus] = useState('idle');
+  const [value, setValue] = useState('');
+  const prefix = usePrefix({ status });
+
+  useKeypress((key, rl) => {
+    if (isEnterKey(key)) {
+      const answer = rl.line.trim();
+      setStatus('done');
+      done(answer);
+    } else {
+      setValue(rl.line);
+    }
+  });
+
+  if (status === 'done') {
+    return `${cursorShow}${prefix} ${bold(message)}  ${cyan(value)}`;
+  }
+
+  return `${cursorHide}${prefix} ${bold(message)}\n  ${value}`;
+});

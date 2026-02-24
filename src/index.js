@@ -9,6 +9,7 @@ import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
 import { analyzeProject } from './scout/analyze.js';
 import reenterSelect from './prompt.js';
+import { runInterview } from './briefing/interview.js';
 
 // Always load .env from the Reenter project folder, regardless of where the user runs it from
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -68,9 +69,18 @@ async function main() {
 
   console.log();
 
-  // Briefing phase — coming next
+  // Briefing phase — build the shared picture before step 1
+  const confirmed = await runInterview(session);
+
+  if (!confirmed) {
+    console.log('\nNo problem. Come back when you\'re ready.\n');
+    process.exit(0);
+  }
+
+  console.log();
+
   // Walkthrough phase — coming next
-  console.log('\x1b[90mBriefing and walkthrough coming next.\x1b[0m\n');
+  console.log('\x1b[90mWalkthrough coming next.\x1b[0m\n');
 }
 
 main();
