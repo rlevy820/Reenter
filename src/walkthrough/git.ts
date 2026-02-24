@@ -42,6 +42,7 @@ function ensureGitignore(projectPath: string): void {
 export async function saveStartingPoint(projectPath: string): Promise<void> {
   let debugInfo = '';
 
+  process.stdout.write('\n');
   await spin('Saving your starting point', 'Starting point saved', async () => {
     const state = checkGitState(projectPath);
 
