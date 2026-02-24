@@ -11,17 +11,17 @@ export const MODES: AppMode[] = [
     value: 'browse',
   },
   {
-    title: 'Run it',
+    title: 'Run',
     description: 'see it running live on your machine',
     value: 'run',
   },
   {
-    title: 'MVP it',
+    title: 'MVP',
     description: 'find the fastest path to real users',
     value: 'mvp',
   },
   {
-    title: 'Ship it',
+    title: 'Ship',
     description: 'clean it up and take it all the way',
     value: 'ship',
   },
