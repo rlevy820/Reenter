@@ -49,4 +49,12 @@ describe('checkGitState', () => {
     writeFileSync(path.join(tmpDir, 'untracked.txt'), 'content');
     expect(checkGitState(tmpDir)).toBe('loose-ends');
   });
+
+  it('returns no-git when the project lives inside a parent git repo', () => {
+    // init git at the parent level, not the project level
+    initGit(tmpDir);
+    const projectDir = path.join(tmpDir, 'my-project');
+    mkdirSync(projectDir);
+    expect(checkGitState(projectDir)).toBe('no-git');
+  });
 });
