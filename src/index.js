@@ -89,25 +89,18 @@ Return this exact JSON shape — no markdown, just raw JSON:
 {
   "summary": "1-2 sentences in plain english. No jargon. No tech terms. What is this and what does it do?",
   "options": [
-    { "name": "specific plain english description of this option and exactly what will happen", "value": "option_1" },
-    { "name": "specific plain english description of this option and exactly what will happen", "value": "option_2" }
+    { "title": "1-2 word label", "description": "one short phrase explaining what will happen", "value": "option_1" },
+    { "title": "1-2 word label", "description": "one short phrase explaining what will happen", "value": "option_2" }
   ]
 }
 
-Rules for writing option names:
+Rules:
 - Order options from least effort at the top to most effort at the bottom
-- Format each option as "Short Title — brief explanation" where the title is 1-2 words max
-- The explanation after the dash should be short — one phrase, not a sentence
-- Never use technology names (no PHP, MySQL, Node, Python, React, database, server, etc.)
-- Describe what will actually happen from the user's perspective
-- If something requires setup, say how involved it is ("~20 min setup", "nothing to set up", etc.)
-- Write like you're texting a smart friend, not writing documentation
-- Options should have between 1 and 3 items. Each name should be specific to this project — never generic.
-
-Example of good option names:
-- "Browse — read through the code, nothing to set up"
-- "Run it — get it working on your computer, ~20 min setup"
-- "Share it — get it live so others can use it"`
+- title: 1-2 words max, punchy (e.g. "Browse", "Run it", "Share it")
+- description: one short phrase, specific to this project (e.g. "read through the code, nothing to set up")
+- Never use technology names in either field (no PHP, MySQL, Node, Python, React, etc.)
+- If setup is needed, say how long ("~20 min setup", "nothing to set up")
+- 1 to 3 options only — never pad`
       },
       {
         role: 'assistant',
@@ -143,8 +136,12 @@ async function main() {
   const { action } = await inquirer.prompt([{
     type: 'list',
     name: 'action',
-    message: 'What do you want to do with it?',
-    choices: analysis.options
+    message: "What's next:",
+    choices: analysis.options.map(opt => ({
+      name: opt.title,
+      value: opt.value,
+      description: opt.description
+    }))
   }]);
 
   console.log('\n→ Got it. Working on that next.\n');
