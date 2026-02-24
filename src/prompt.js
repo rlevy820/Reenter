@@ -8,51 +8,55 @@ import {
   useState,
   useKeypress,
   usePrefix,
+  usePagination,
   isUpKey,
   isDownKey,
   isEnterKey,
 } from '@inquirer/core';
+import { cursorHide } from '@inquirer/ansi';
 
-const cyan  = (s) => `\x1b[36m${s}\x1b[0m`;
-const dim   = (s) => `\x1b[90m${s}\x1b[0m`;
-const bold  = (s) => `\x1b[1m${s}\x1b[0m`;
-const reset = '\x1b[0m';
+const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
+const dim  = (s) => `\x1b[90m${s}\x1b[0m`;
+const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 
 const reenterSelect = createPrompt((config, done) => {
   const { message, choices } = config;
-  const [active, setActive] = useState(0);
   const [status, setStatus] = useState('idle');
+  const [active, setActive] = useState(0);
   const prefix = usePrefix({ status });
 
-  useKeypress((key) => {
-    if (isUpKey(key)) {
-      setActive((prev) => (prev - 1 + choices.length) % choices.length);
-    } else if (isDownKey(key)) {
-      setActive((prev) => (prev + 1) % choices.length);
-    } else if (isEnterKey(key)) {
+  useKeypress((key, rl) => {
+    if (isEnterKey(key)) {
       setStatus('done');
       done(choices[active].value);
+    } else if (isUpKey(key) || isDownKey(key)) {
+      rl.clearLine(0);
+      const offset = isUpKey(key) ? -1 : 1;
+      const next = (active + offset + choices.length) % choices.length;
+      setActive(next);
     }
   });
 
   if (status === 'done') {
-    return `${prefix} ${bold(message)}  ${cyan(choices[active].title)}`;
+    return `${prefix} ${message}  ${cyan(choices[active].title)}`;
   }
 
-  const choiceLines = choices.map((choice, i) => {
-    const isActive = i === active;
-    const cursor = isActive ? cyan('❯') : ' ';
-    const title  = isActive ? bold(choice.title) : choice.title;
-    const desc   = isActive && choice.description
-      ? `  ${dim(choice.description)}`
-      : '';
-    return `${cursor} ${title}${desc}`;
+  const page = usePagination({
+    items: choices,
+    active,
+    renderItem({ item, isActive }) {
+      const cursor = isActive ? cyan('❯') : ' ';
+      const title  = isActive ? bold(item.title) : item.title;
+      const desc   = isActive && item.description
+        ? `  ${dim(item.description)}`
+        : '';
+      return `${cursor} ${title}${desc}`;
+    },
+    pageSize: 7,
+    loop: true,
   });
 
-  return [
-    `${prefix} ${bold(message)}`,
-    choiceLines.join('\n'),
-  ].join('\n');
+  return `${prefix} ${bold(message)}\n${page}${cursorHide}`;
 });
 
 export default reenterSelect;
