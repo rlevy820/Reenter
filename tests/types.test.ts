@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   AnalysisSchema,
+  AssessmentActionSchema,
   BriefingResponseSchema,
+  CheckActionSchema,
+  InstructionActionSchema,
   OrientationSchema,
+  QuestionActionSchema,
   QuestionSchema,
+  ReadyActionSchema,
   StepsSchema,
   SynthesisResponseSchema,
 } from '../src/types.js';
@@ -104,6 +109,141 @@ describe('BriefingResponseSchema', () => {
   it('throws when question has wrong type', () => {
     const bad = { ...validBriefing, question: { ...validBriefing.question, type: 'free' } };
     expect(() => BriefingResponseSchema.parse(bad)).toThrow();
+  });
+});
+
+// ─── Assessment action schemas ────────────────────────────────────────────────
+
+describe('CheckActionSchema', () => {
+  it('parses a valid check action', () => {
+    expect(() =>
+      CheckActionSchema.parse({
+        type: 'check',
+        name: 'Node.js',
+        description: 'the software this app runs on',
+        command: 'node --version',
+      })
+    ).not.toThrow();
+  });
+
+  it('throws on wrong type', () => {
+    expect(() =>
+      CheckActionSchema.parse({ type: 'question', name: 'x', description: 'x', command: 'x' })
+    ).toThrow();
+  });
+
+  it('throws on missing command', () => {
+    expect(() =>
+      CheckActionSchema.parse({ type: 'check', name: 'Node.js', description: 'x' })
+    ).toThrow();
+  });
+});
+
+describe('QuestionActionSchema', () => {
+  it('parses a question with options', () => {
+    expect(() =>
+      QuestionActionSchema.parse({
+        type: 'question',
+        text: 'Did you ever set up a database for this?',
+        options: ['Yes', 'No', 'Not sure'],
+      })
+    ).not.toThrow();
+  });
+
+  it('parses a question without options (free text)', () => {
+    expect(() =>
+      QuestionActionSchema.parse({ type: 'question', text: 'What port does this run on?' })
+    ).not.toThrow();
+  });
+
+  it('throws on missing text', () => {
+    expect(() => QuestionActionSchema.parse({ type: 'question' })).toThrow();
+  });
+});
+
+describe('InstructionActionSchema', () => {
+  it('parses a valid instruction with verifyCommand', () => {
+    expect(() =>
+      InstructionActionSchema.parse({
+        type: 'instruction',
+        summary: "Node.js isn't installed",
+        steps: ['Go to nodejs.org', 'Click Download', 'Run the installer'],
+        verifyCommand: 'node --version',
+      })
+    ).not.toThrow();
+  });
+
+  it('parses a valid instruction without verifyCommand', () => {
+    expect(() =>
+      InstructionActionSchema.parse({
+        type: 'instruction',
+        summary: 'Create a .env file',
+        steps: ['Copy .env.example to .env', 'Fill in your values'],
+      })
+    ).not.toThrow();
+  });
+
+  it('throws on missing steps', () => {
+    expect(() =>
+      InstructionActionSchema.parse({ type: 'instruction', summary: 'Do something' })
+    ).toThrow();
+  });
+});
+
+describe('ReadyActionSchema', () => {
+  it('parses a valid ready action', () => {
+    expect(() =>
+      ReadyActionSchema.parse({
+        type: 'ready',
+        startCommand: 'npm start',
+        notes: ["The payment page won't work without Stripe keys"],
+      })
+    ).not.toThrow();
+  });
+
+  it('parses with empty notes', () => {
+    expect(() =>
+      ReadyActionSchema.parse({ type: 'ready', startCommand: 'npm start', notes: [] })
+    ).not.toThrow();
+  });
+
+  it('throws on missing startCommand', () => {
+    expect(() => ReadyActionSchema.parse({ type: 'ready', notes: [] })).toThrow();
+  });
+});
+
+describe('AssessmentActionSchema', () => {
+  it('parses each action type via the discriminated union', () => {
+    expect(() =>
+      AssessmentActionSchema.parse({
+        type: 'check',
+        name: 'Node.js',
+        description: 'the software this app runs on',
+        command: 'node --version',
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      AssessmentActionSchema.parse({ type: 'question', text: 'Did you have a database?' })
+    ).not.toThrow();
+
+    expect(() =>
+      AssessmentActionSchema.parse({
+        type: 'instruction',
+        summary: 'Node.js is missing',
+        steps: ['Install it'],
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      AssessmentActionSchema.parse({ type: 'ready', startCommand: 'npm start', notes: [] })
+    ).not.toThrow();
+  });
+
+  it('throws on unknown type', () => {
+    expect(() =>
+      AssessmentActionSchema.parse({ type: 'unknown', command: 'ls' })
+    ).toThrow();
   });
 });
 

@@ -35,6 +35,53 @@ export const OrientationSchema = z.object({
   orientation: z.string(),
 });
 
+// ─── Assessment loop actions ──────────────────────────────────────────────────
+//
+// One AI call per iteration of the assessment loop.
+// The AI returns one of four action types — the loop handles each accordingly.
+
+// check — run a command on the machine to see what's installed / running
+export const CheckActionSchema = z.object({
+  type: z.literal('check'),
+  name: z.string(), // technical name, e.g. "Node.js"
+  description: z.string(), // plain english: what it does, e.g. "the software this app runs on"
+  command: z.string(), // exact command to run, e.g. "node --version"
+});
+export type CheckAction = z.infer<typeof CheckActionSchema>;
+
+// question — something only the user knows (can't be determined from files or machine)
+export const QuestionActionSchema = z.object({
+  type: z.literal('question'),
+  text: z.string(),
+  options: z.array(z.string()).optional(), // if present: show as select. if absent: free text
+});
+export type QuestionAction = z.infer<typeof QuestionActionSchema>;
+
+// instruction — something needs installing or fixing before we can continue
+export const InstructionActionSchema = z.object({
+  type: z.literal('instruction'),
+  summary: z.string(), // e.g. "Node.js isn't installed"
+  steps: z.array(z.string()), // numbered plain english steps for the user to follow
+  verifyCommand: z.string().optional(), // if present: offer to re-run this after steps are done
+});
+export type InstructionAction = z.infer<typeof InstructionActionSchema>;
+
+// ready — everything needed is in place, time to start the app
+export const ReadyActionSchema = z.object({
+  type: z.literal('ready'),
+  startCommand: z.string(), // exact command to run, e.g. "npm start"
+  notes: z.array(z.string()), // soft blockers — what won't work and why (specific, not generic)
+});
+export type ReadyAction = z.infer<typeof ReadyActionSchema>;
+
+export const AssessmentActionSchema = z.discriminatedUnion('type', [
+  CheckActionSchema,
+  QuestionActionSchema,
+  InstructionActionSchema,
+  ReadyActionSchema,
+]);
+export type AssessmentAction = z.infer<typeof AssessmentActionSchema>;
+
 // ─── Mode ─────────────────────────────────────────────────────────────────────
 
 // A menu item — fixed, not AI-derived
