@@ -75,5 +75,5 @@ export async function saveStartingPoint(projectPath: string): Promise<void> {
   });
 
   // TODO: remove before ship
-  process.stdout.write(`  \x1b[90m[debug] ${debugInfo}\x1b[0m\n\n`);
+  process.stdout.write(`  \x1b[90m[debug] ${debugInfo}\x1b[0m\n`);
 }
