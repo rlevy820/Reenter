@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { runInterview } from './briefing/interview.js';
-import reenterSelect, { spin } from './prompt.js';
+import reenterSelect, { spin, formatTextBlock, withMargin } from './prompt.js';
 import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
@@ -28,7 +28,7 @@ async function main() {
 
     if (!structure) {
       process.stdout.write('\r\x1b[2K\n');
-      console.error('This folder looks empty. Point reenter at a project folder.');
+      process.stdout.write(withMargin('This folder looks empty. Point reenter at a project folder.\n'));
       process.exit(1);
     }
 
@@ -42,7 +42,7 @@ async function main() {
   session.plan.options = analysis.options;
 
   // Show summary
-  process.stdout.write(`\n${session.project.summary}\n\n`);
+  process.stdout.write(formatTextBlock(session.project.summary));
 
   // Let user pick a path
   const selectedValue = await reenterSelect({
@@ -61,20 +61,18 @@ async function main() {
   session.plan.steps = chosen.steps;
   logHistory(session, 'user', `Chose: ${chosen.title}`);
 
-  console.log();
+  process.stdout.write('\n');
 
   // Briefing phase — build the shared picture before step 1
   const confirmed = await runInterview(client, session);
 
   if (!confirmed) {
-    console.log("\nNo problem. Come back when you're ready.\n");
+    process.stdout.write(formatTextBlock("No problem. Come back when you're ready."));
     process.exit(0);
   }
 
-  console.log();
-
-  // Walkthrough phase — coming next
-  console.log('\x1b[90mWalkthrough coming next.\x1b[0m\n');
+  // Walkthrough phase — coming next  
+  process.stdout.write(formatTextBlock('\x1b[90mWalkthrough coming next.\x1b[0m'));
 }
 
 main();

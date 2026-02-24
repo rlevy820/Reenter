@@ -21,6 +21,56 @@ const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
 export const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 const gray = (s: string) => `\x1b[90m${s}\x1b[0m`;
 
+// ─── Consistent margin utilities ──────────────────────────────────────────────
+// All text output should align with the width of the dot indicators
+const DOT_MARGIN = '  '; // Width of "● " (dot + space)
+
+// Format text with consistent left margin to match dot width
+export function withMargin(text: string): string {
+  const terminalWidth = process.stdout.columns || 80;
+  const availableWidth = terminalWidth - DOT_MARGIN.length;
+  
+  return text
+    .split('\n')
+    .map((line) => {
+      if (line.length <= availableWidth) {
+        return DOT_MARGIN + line;
+      }
+      
+      // Handle long lines by wrapping them while maintaining indentation
+      const words = line.split(' ');
+      const wrappedLines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (testLine.length <= availableWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            wrappedLines.push(DOT_MARGIN + currentLine);
+            currentLine = word;
+          } else {
+            // Single word longer than available width, break it
+            wrappedLines.push(DOT_MARGIN + word);
+          }
+        }
+      }
+      
+      if (currentLine) {
+        wrappedLines.push(DOT_MARGIN + currentLine);
+      }
+      
+      return wrappedLines.join('\n');
+    })
+    .join('\n');
+}
+
+// Format multiline text blocks with consistent margin and proper spacing
+export function formatTextBlock(text: string): string {
+  return `\n${withMargin(text)}\n\n`;
+}
+
 interface SelectChoice {
   title: string;
   value: string;

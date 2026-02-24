@@ -12,7 +12,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 import type { z } from 'zod';
-import reenterSelect, { reenterInput, think } from '../prompt.js';
+import reenterSelect, { reenterInput, think, formatTextBlock } from '../prompt.js';
 import { logHistory } from '../session.js';
 import type { Question, Session } from '../types.js';
 import { BriefingResponseSchema, SynthesisResponseSchema } from '../types.js';
@@ -130,7 +130,6 @@ Return raw JSON only:
 // ─── Ask a question ───────────────────────────────────────────────────────────
 
 async function askQuestion(question: Question): Promise<string> {
-  console.log();
   const choices = [
     ...question.options.map((opt) => ({ title: opt, value: opt })),
     { title: 'Other', value: '__other__' },
@@ -154,7 +153,7 @@ export async function runInterview(client: Anthropic, session: Session): Promise
   session.briefing.presentation = briefing.presentation;
   session.briefing.questions.push(briefing.question);
 
-  process.stdout.write(`\n${briefing.presentation}\n`);
+  process.stdout.write(formatTextBlock(briefing.presentation));
 
   const answer = await askQuestion(briefing.question);
   session.briefing.answers[briefing.question.id] = answer;
@@ -168,7 +167,7 @@ export async function runInterview(client: Anthropic, session: Session): Promise
   session.briefing.synthesis = synthesis;
   logHistory(session, 'ai', synthesis);
 
-  process.stdout.write(`\n${synthesis}\n\n`);
+  process.stdout.write(formatTextBlock(synthesis));
 
   const ready = await reenterSelect({
     message: 'Ready to start?',
