@@ -118,6 +118,37 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ---
 
+## Mode 1 — Just Run It (Design Decisions Locked)
+
+**Goal:** Lowest friction path to just seeing the project again. Not setting it up properly, not production ready. Just — what does this look like, can I poke around it.
+
+**How it works:**
+- Tool scans the project and does all the technical thinking under the hood
+- User never sees jargon — no "package.json", "env vars", "npm install"
+- Tool figures out the complexity, then surfaces just enough to keep the user informed and in control
+- Always specific to *this* project — never generic descriptions
+
+**The flow:**
+1. Tool scans silently
+2. Outputs a plain english summary of what the project is (no confirmation needed — it already knows)
+3. Presents options for how to run it — each option is specific to this project, tells the user exactly what will happen in plain english
+
+**Example output:**
+```
+This is a website you built — it has a front end you can
+see immediately, and a back end that handles user logins.
+
+How do you want to run it?
+
+> Just show me the front end (nothing to set up)
+  Run the whole thing — this will start the server and connect to the user database
+  Get it ready to share with someone — this will take a few steps
+```
+
+**Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never.
+
+---
+
 ## Where We Are
 
 - [x] Problem defined
@@ -129,13 +160,13 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 - [x] Git initialized
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
-- [ ] Conversation tree mapped out — **this is the next step**
+- [ ] Mode 1 conversation tree fully mapped
+- [ ] Mode 2 conversation tree mapped
+- [ ] Mode 3 conversation tree mapped
 - [ ] Build begins
 
 ---
 
 ## Next Step
 
-Map the conversation tree. For each of the three modes, design every question, every possible answer, and where each answer leads. This is the most important design work before any coding.
-
-Start here: **Mode 1 — Just run it.** What's the first question after the user selects this? What are the possible answers? Where does each lead?
+Finish mapping Mode 1 — specifically how each of the three run options branches from there. Then move to Mode 2 and Mode 3.
