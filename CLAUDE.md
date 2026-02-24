@@ -84,6 +84,38 @@ Via interactive terminal prompt (arrow keys, radio buttons, "Other" option for f
 
 ---
 
+## Technical Stack
+
+- **Runtime:** Node.js CLI tool — runs in any terminal, installable globally via npm
+- **LLM:** Anthropic API directly (no middleware)
+- **Model strategy:** Use the right model for the job
+  - `claude-haiku-4-5` — lightweight steps: reading files, summarizing structure, cheap tasks
+  - `claude-sonnet-4-6` — reasoning heavy steps: finding the door back in, refactor proposals
+- **Interactive prompts:** Inquirer.js — arrow keys, radio buttons, "Other" free text input
+- **Future:** OpenRouter for multi-model support is a north star, not a day one concern
+
+---
+
+## Meta-Commands (for dev sessions with Claude)
+
+These are commands Ryan calls during a session to trigger specific actions. Claude can suggest them but never calls them unilaterally.
+
+- `/checkpoint` — stop, reflect, update CLAUDE.md with what was just decided
+- `/decide` — we've been discussing long enough, time to make a call and document it
+- `/offtrack` — we're drifting from the north star, pull back
+
+Claude should *suggest* these when it notices a checkpoint moment, a decision lingering, or drift happening — but Ryan pulls the trigger.
+
+---
+
+## The Meta Insight
+
+The way this project is being built mirrors how the product should feel. The conversation between Ryan and Claude — sometimes chatting, sometimes working, sometimes teaching, sometimes providing instructions — shifting modes fluidly without feeling jarring. That's exactly what Reenter should do with the user. The dev process is the design spec.
+
+Also: the graveyard of old projects is a source of pride, not shame. The user coming to Reenter isn't embarrassed — they're saying "this was cool and I want to honor it." The tool's voice should reflect that. It's archaeology, not cleanup.
+
+---
+
 ## Where We Are
 
 - [x] Problem defined
@@ -93,8 +125,9 @@ Via interactive terminal prompt (arrow keys, radio buttons, "Other" option for f
 - [x] Voice and tone defined
 - [x] README written
 - [x] Git initialized
-- [ ] Conversation tree mapped out (this is the next step)
-- [ ] Technical stack decided
+- [x] Project structure and DevOps foundation set up
+- [x] Technical stack decided
+- [ ] Conversation tree mapped out — **this is the next step**
 - [ ] Build begins
 
 ---
