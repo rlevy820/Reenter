@@ -126,38 +126,54 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ---
 
-## Run Mode — Walkthrough Design (Locked)
+## The Four Modes — The Door Metaphor (Locked)
 
-**Goal:** Lowest friction path to just seeing the project again. Not production ready. Just — what does this look like, can I poke around it.
+Run, MVP, and Ship are **stages of the same journey**, not separate destinations. Each one includes everything before it. Browse is the only mode that stands alone.
+
+- **Browse** — stand in front of the door and understand how it works. Don't go through it. Find the thread that explains the whole thing.
+- **Run** — build the cheapest bridge to get inside and look around. Get it running locally, as-is. Accept that some features won't work. Don't touch the code, don't fake anything.
+- **MVP** — run it locally first, then continue: build a real bridge and open the door to actual users.
+- **Ship** — run it, MVP it, then rebuild the door and bridge properly. The whole thing.
+
+The menu stays Browse / Run / MVP / Ship. The pipeline is handled internally — MVP starts with Run, Ship starts with Run → MVP.
+
+**No stubbing. No mocking. No fake databases.** Guide the user through the real setup. If something won't work, tell them and move on.
+
+---
+
+## Walkthrough Design (Locked)
 
 **How it works:**
-- Tool does all the technical thinking under the hood
-- User never sees jargon — no "package.json", "env vars", "npm install"
-- Chat mode once walkthrough starts — text input always available, agent leads but adapts
+- Chat mode — text input always available, agent leads but adapts to what the user says
 - Consent before every action — always shows what it's about to do and why
 - Hybrid UI — select menus for structured choices, free text always available
+- No jargon — speak in plain english, say what things do not what they're called
 
 **The full flow:**
 1. Scout: scan silently, show "This looks like..." summary (Haiku)
 2. Menu: What's next — Browse / Run / MVP / Ship
-3. Walkthrough starts:
-   a. **Save starting point** — git pre-flight, always first
-   b. **Pre-flight assessment** — what does this project actually need to run?
-   c. **Non-technical questions** — things only the user knows
-   d. **Execution loop** — one step at a time, chat mode, consent before action
+3. Walkthrough starts (Run as example):
+   a. **Save starting point** — git pre-flight, always first (BUILT)
+   b. **Assessment** — AI reads project deeply, figures out what it needs to run, produces a plain english summary + any questions only the user can answer
+   c. **Machine check** — one consent moment: "Can I check what's installed on your machine?" If yes, runs silent checks and factors results into the plan
+   d. **Execution loop** — one step at a time, chat mode, consent before every action
 
-**Dependency tiers (Run mode):**
-- **Tier 1 — hard blockers:** app won't start. Must resolve. (missing runtime, database not running, env var that crashes on boot)
-- **Tier 2 — soft blockers:** app starts but a feature breaks. Explain and skip for Run. (Stripe, email, third-party APIs)
-- **Tier 3 — silent fails:** app works, one page errors. Note it and move on.
+**Assessment (step 2) design:**
+- One Sonnet call — reads project deeply (more than 2 levels), understands tech stack, services, what's needed to boot
+- Produces: brief plain english summary of what it found + any questions it can't answer from files
+- No stubbing recommendations — real setup only
+- Dependency thinking:
+  - Hard blockers (app won't start): must resolve
+  - Soft blockers (feature breaks after start): note and move on — e.g. "Stripe won't work but the rest will"
+  - If user says no to machine check: generate steps anyway, best guess based on project files
 
 **Git pre-flight (locked):**
 - Always runs first, always shows "Saving your starting point" spinner
 - No git → `git init` + commit everything (creates `.gitignore` if missing)
 - Loose ends → silently commit everything
 - Already clean → empty commit (`--allow-empty`)
-- Commit message: `"saving starting point before reenter"`
-- No branch created — the commit IS the restore point. User can always return to it.
+- Commit message: `"saving starting point before reenter [NN]"` — indexed, increments each run
+- No branch created — the commit IS the restore point
 - Only treats git as project's own if repo root === project path (parent repos ignored)
 - Applies to Run, MVP, and Ship — not Browse
 
@@ -239,10 +255,10 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 - [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest (54 tests)
 - [x] CI/CD — GitHub Actions, runs build + lint + tests on push/PR
 - [x] Walkthrough step 1 — git pre-flight, "Saving your starting point" (BUILT)
-- [ ] Walkthrough step 2 — pre-flight assessment (what does this project need to run?)
-- [ ] Walkthrough step 3 — non-technical questions (things only the user knows)
-- [ ] Walkthrough step 4 — execution loop (chat mode, consent before action)
-- [ ] Browse, MVP, Ship modes (currently "coming soon")
+- [ ] Walkthrough step 2 — assessment: deep scan + AI figures out what's needed + machine check consent — **this is next**
+- [ ] Walkthrough step 3 — execution loop (chat mode, one step at a time, consent before action)
+- [ ] MVP and Ship stages (pipeline continues after Run)
+- [ ] Browse mode
 - [ ] First-run API key setup flow
 - [ ] Global install (`reenter` from anywhere)
 
