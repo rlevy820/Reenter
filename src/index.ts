@@ -23,7 +23,8 @@ async function main() {
   const session = createSession({ projectPath, mode: 'run' });
 
   // Scout phase — read the project and get a plain english summary
-  const analysis = await spin('Reentering', 'Reentering', async () => {
+  process.stdout.write('\n');
+  const analysis = await spin('Reentering', 'Welcome Back', async () => {
     const structure = scanDirectory(projectPath).join('\n');
 
     if (!structure) {
