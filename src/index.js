@@ -95,11 +95,19 @@ Return this exact JSON shape — no markdown, just raw JSON:
 }
 
 Rules for writing option names:
+- Order options from least effort at the top to most effort at the bottom
+- Format each option as "Short Title — brief explanation" where the title is 1-2 words max
+- The explanation after the dash should be short — one phrase, not a sentence
 - Never use technology names (no PHP, MySQL, Node, Python, React, database, server, etc.)
 - Describe what will actually happen from the user's perspective
-- If something requires setup, say how involved it is ("takes about 20 minutes", "nothing to set up", etc.)
+- If something requires setup, say how involved it is ("~20 min setup", "nothing to set up", etc.)
 - Write like you're texting a smart friend, not writing documentation
-- Options should have between 1 and 3 items. Each name should be specific to this project — never generic.`
+- Options should have between 1 and 3 items. Each name should be specific to this project — never generic.
+
+Example of good option names:
+- "Browse — read through the code, nothing to set up"
+- "Run it — get it working on your computer, ~20 min setup"
+- "Share it — get it live so others can use it"`
       },
       {
         role: 'assistant',
