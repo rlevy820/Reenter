@@ -12,7 +12,17 @@ import { existsSync, realpathSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spin } from '../prompt.js';
 
-const COMMIT_MESSAGE = 'saving starting point before reenter';
+const COMMIT_BASE = 'saving starting point before reenter';
+
+export function nextCommitMessage(projectPath: string): string {
+  try {
+    const log = exec('git log --all --format=%s', projectPath);
+    const count = (log.match(/saving starting point before reenter \[\d+\]/g) ?? []).length;
+    return `${COMMIT_BASE} [${String(count).padStart(2, '0')}]`;
+  } catch {
+    return `${COMMIT_BASE} [00]`;
+  }
+}
 
 function exec(command: string, cwd: string): string {
   return execSync(command, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
@@ -46,19 +56,21 @@ export async function saveStartingPoint(projectPath: string): Promise<void> {
   await spin('Saving your starting point', 'Starting point saved', async () => {
     const state = checkGitState(projectPath);
 
+    const message = nextCommitMessage(projectPath);
+
     if (state === 'no-git') {
       ensureGitignore(projectPath);
       exec('git init', projectPath);
       exec('git add .', projectPath);
-      exec(`git commit -m "${COMMIT_MESSAGE}"`, projectPath);
-      debugInfo = 'no git found — initialized repo, committed everything';
+      exec(`git commit -m "${message}"`, projectPath);
+      debugInfo = `no git found — initialized repo, committed everything (${message})`;
     } else if (state === 'loose-ends') {
       exec('git add .', projectPath);
-      exec(`git commit -m "${COMMIT_MESSAGE}"`, projectPath);
-      debugInfo = 'git found — committed loose ends';
+      exec(`git commit -m "${message}"`, projectPath);
+      debugInfo = `git found — committed loose ends (${message})`;
     } else {
-      exec(`git commit --allow-empty -m "${COMMIT_MESSAGE}"`, projectPath);
-      debugInfo = 'git found, already clean — created empty restore point commit';
+      exec(`git commit --allow-empty -m "${message}"`, projectPath);
+      debugInfo = `git found, already clean — created empty restore point (${message})`;
     }
   });
 

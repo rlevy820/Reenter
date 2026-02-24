@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { checkGitState } from '../../src/walkthrough/git.js';
+import { checkGitState, nextCommitMessage } from '../../src/walkthrough/git.js';
 
 function exec(command: string, cwd: string): string {
   return execSync(command, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
@@ -56,5 +56,31 @@ describe('checkGitState', () => {
     const projectDir = path.join(tmpDir, 'my-project');
     mkdirSync(projectDir);
     expect(checkGitState(projectDir)).toBe('no-git');
+  });
+});
+
+describe('nextCommitMessage', () => {
+  it('returns [00] on first run', () => {
+    initGit(tmpDir);
+    expect(nextCommitMessage(tmpDir)).toBe('saving starting point before reenter [00]');
+  });
+
+  it('returns [01] after one previous reenter commit', () => {
+    initGit(tmpDir);
+    exec('git commit --allow-empty -m "saving starting point before reenter [00]"', tmpDir);
+    expect(nextCommitMessage(tmpDir)).toBe('saving starting point before reenter [01]');
+  });
+
+  it('returns [02] after two previous reenter commits', () => {
+    initGit(tmpDir);
+    exec('git commit --allow-empty -m "saving starting point before reenter [00]"', tmpDir);
+    exec('git commit --allow-empty -m "saving starting point before reenter [01]"', tmpDir);
+    expect(nextCommitMessage(tmpDir)).toBe('saving starting point before reenter [02]');
+  });
+
+  it('ignores non-reenter commits when counting', () => {
+    initGit(tmpDir);
+    exec('git commit --allow-empty -m "some other commit"', tmpDir);
+    expect(nextCommitMessage(tmpDir)).toBe('saving starting point before reenter [00]');
   });
 });
