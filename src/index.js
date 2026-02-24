@@ -94,7 +94,12 @@ Return this exact JSON shape — no markdown, just raw JSON:
   ]
 }
 
-Options should have between 1 and 3 items. Each name should be specific to this project — never generic.`
+Rules for writing option names:
+- Never use technology names (no PHP, MySQL, Node, Python, React, database, server, etc.)
+- Describe what will actually happen from the user's perspective
+- If something requires setup, say how involved it is ("takes about 20 minutes", "nothing to set up", etc.)
+- Write like you're texting a smart friend, not writing documentation
+- Options should have between 1 and 3 items. Each name should be specific to this project — never generic.`
       },
       {
         role: 'assistant',
