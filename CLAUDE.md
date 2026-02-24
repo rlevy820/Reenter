@@ -87,11 +87,16 @@ Via interactive terminal prompt (arrow keys, radio buttons, "Other" option for f
 ## Technical Stack
 
 - **Runtime:** Node.js CLI tool — runs in any terminal, installable globally via npm
+- **Language:** TypeScript (strict mode) — all source in `src/`, compiled to `dist/` via tsup
 - **LLM:** Anthropic API directly (no middleware)
 - **Model strategy:** Use the right model for the job
   - `claude-haiku-4-5` — lightweight steps: reading files, summarizing structure, cheap tasks
   - `claude-sonnet-4-6` — reasoning heavy steps: finding the door back in, refactor proposals
-- **Interactive prompts:** Inquirer.js — arrow keys, radio buttons, "Other" free text input
+- **Interactive prompts:** `@inquirer/core` — custom components, we own every pixel
+- **Validation:** Zod — every AI response shape is validated at runtime, not assumed
+- **Build:** tsup — single ESM bundle, shebang injected automatically
+- **Linting/formatting:** Biome — one tool, zero config drift
+- **Testing:** Vitest — infrastructure in place, tests written as features complete
 - **Future:** OpenRouter for multi-model support is a north star, not a day one concern
 
 ---
@@ -173,23 +178,24 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ```
 src/
-  index.js          — entry point only, wires everything together
-  session.js        — the spine, holds all state for the entire session
-  prompt.js         — all custom terminal UI lives here
+  index.ts          — entry point only, wires everything together
+  session.ts        — the spine, holds all state for the entire session
+  prompt.ts         — all custom terminal UI lives here
+  types.ts          — Zod schemas + TypeScript types for all AI responses and session state
 
   scout/            — understands the project before anything happens
-    directory.js    — scans folder structure
-    files.js        — reads key files (package.json, README, etc.)
-    analyze.js      — Haiku builds the full high level map
+    directory.ts    — scans folder structure
+    files.ts        — reads key files (package.json, README, etc.)
+    analyze.ts      — Haiku builds the full high level map
 
   briefing/         — shows the user what they're getting into before step 1
-    precheck.js     — runs environment checks with user consent
-    present.js      — presents the pre-flight picture, gets confirmation
+    precheck.ts     — runs environment checks with user consent
+    present.ts      — presents the pre-flight picture, gets confirmation
 
   walkthrough/      — guided step-by-step execution
-    steps.js        — manages step progression and state
-    check.js        — runs commands, captures output, reports back
-    respond.js      — handles what the user says at each step
+    steps.ts        — manages step progression and state
+    check.ts        — runs commands, captures output, reports back
+    respond.ts      — handles what the user says at each step
 ```
 
 **Why this structure:** Each folder has one job. Named after what they mean in the product, not what they do technically. Scout, Briefing, Walkthrough — anyone can navigate this at 2am.
@@ -222,8 +228,8 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Known Issues / Polish Later
 
-- Summary output occasionally still uses light jargon ("server", "database") — fixed in analyze.js prompt but needs testing
-- API key setup flow not built yet — right now the key lives in Reenter's own `.env`. Future: first-run setup asks the user for their key and stores it.
+- Summary output occasionally still uses light jargon ("server", "database") — fixed in analyze.ts prompt but needs testing
+- API key setup flow not built yet — right now the key lives in Reenter's own `.env`. Future: first-run setup asks the user for their key and stores it in `~/.config/reenter/`.
 
 ---
 
@@ -239,11 +245,12 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
 - [x] Mode 1 scan + derived options working
-- [x] Custom terminal UI (prompt.js) — inline description on hover
+- [x] Custom terminal UI (prompt.ts) — inline description on hover
 - [x] Two-level planning model — high level map + step-by-step execution
 - [x] Project refactored into scout/briefing/walkthrough + session spine
-- [ ] Briefing phase — **this is next**
-- [ ] Walkthrough phase — check.js, respond.js, steps.js
+- [x] Briefing phase — presentation, one question, synthesis, confirm
+- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest infrastructure
+- [ ] Walkthrough phase — check.ts, respond.ts, steps.ts — **this is next**
 - [ ] Mode 2 built
 - [ ] Mode 3 built
 - [ ] First-run API key setup flow
@@ -253,4 +260,4 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Next Step
 
-Design and build the briefing phase. This is the moment between picking an option and starting step 1. The user sees what they're actually getting into — based on real environment checks, not guesses. They confirm before anything starts. Nothing moves without a clear yes.
+Build the walkthrough phase. This is the step-by-step execution loop — the core of Mode 1. Each step gets one AI call (Sonnet) that figures out exactly what it means for this specific project. The execution pattern is locked: explain why → show the command → get consent → run it → read the real output → move forward only when user confirms.

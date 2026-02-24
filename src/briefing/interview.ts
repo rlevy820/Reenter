@@ -1,4 +1,4 @@
-// briefing/interview.js — builds the shared picture before step 1.
+// briefing/interview.ts — builds the shared picture before step 1.
 //
 // One question. That's all we need.
 // The files tell us what it is. The user tells us where it was.
@@ -10,15 +10,21 @@
 //   3. Synthesis — one sentence: what they said + what step 1 is
 //   4. Confirm
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
+import type { z } from 'zod';
 import reenterSelect, { reenterInput, think } from '../prompt.js';
 import { logHistory } from '../session.js';
+import type { Question, Session } from '../types.js';
+import { BriefingResponseSchema, SynthesisResponseSchema } from '../types.js';
 
 const MODEL = 'claude-sonnet-4-6';
 
-// Sonnet sometimes wraps JSON in markdown fences despite being told not to.
-function parseJSON(text) {
-  return JSON.parse(text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim());
+function parseJSON<T>(schema: z.ZodSchema<T>, text: string): T {
+  const cleaned = text
+    .replace(/^```(?:json)?\n?/, '')
+    .replace(/\n?```$/, '')
+    .trim();
+  return schema.parse(JSON.parse(cleaned));
 }
 
 // Voice framing — a standard the model holds itself to, not a rules list.
@@ -26,14 +32,17 @@ const VOICE = `You are talking to a self-taught developer who builds things to l
 
 // ─── Generate presentation + Q1 ──────────────────────────────────────────────
 
-async function generateBriefing(client, session) {
+async function generateBriefing(client: Anthropic, session: Session) {
   const { summary, structure, keyFiles } = session.project;
   const { chosenOption } = session.plan;
+
+  if (!chosenOption) throw new Error('No option chosen before briefing');
 
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 512,
-    system: 'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
+    system:
+      'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
     messages: [
       {
         role: 'user',
@@ -71,25 +80,30 @@ Rules:
 - presentation: starts with "Looks like" or "It seems like", 1-2 sentences, no jargon, adds something new
 - question text: max 8 words, direct
 - options: specific to this project, concrete
-- Do NOT include "Other" in options — it is added automatically`
-      }
-    ]
+- Do NOT include "Other" in options — it is added automatically`,
+      },
+    ],
   });
 
-  return think('reading between the lines', stream, msg => parseJSON(msg.content[0].text));
+  return think('reading between the lines', stream, (text) =>
+    parseJSON(BriefingResponseSchema, text)
+  );
 }
 
 // ─── Generate synthesis ───────────────────────────────────────────────────────
 
-async function generateSynthesis(client, session) {
+async function generateSynthesis(client: Anthropic, session: Session): Promise<string> {
   const { chosenOption } = session.plan;
   const { questions, answers } = session.briefing;
   const q1 = questions[0];
 
+  if (!chosenOption || !q1) throw new Error('Missing plan or question for synthesis');
+
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 128,
-    system: 'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
+    system:
+      'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
     messages: [
       {
         role: 'user',
@@ -101,21 +115,25 @@ WHAT THEY SAID: "${answers[q1.id]}"
 STEP 1: "${chosenOption.steps[0]}"
 
 Return raw JSON only:
-{ "synthesis": "..." }`
-      }
-    ]
+{ "synthesis": "..." }`,
+      },
+    ],
   });
 
-  return think('putting it together', stream, msg => parseJSON(msg.content[0].text).synthesis);
+  return think(
+    'putting it together',
+    stream,
+    (text) => parseJSON(SynthesisResponseSchema, text).synthesis
+  );
 }
 
 // ─── Ask a question ───────────────────────────────────────────────────────────
 
-async function askQuestion(question) {
+async function askQuestion(question: Question): Promise<string> {
   console.log();
   const choices = [
-    ...question.options.map(opt => ({ title: opt, value: opt })),
-    { title: 'Other', value: '__other__' }
+    ...question.options.map((opt) => ({ title: opt, value: opt })),
+    { title: 'Other', value: '__other__' },
   ];
 
   const selected = await reenterSelect({ message: question.text, choices });
@@ -129,10 +147,7 @@ async function askQuestion(question) {
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
-export async function runInterview(session) {
-  // Client created here so dotenv has already loaded the API key by the time this runs
-  const client = new Anthropic();
-
+export async function runInterview(client: Anthropic, session: Session): Promise<boolean> {
   // Presentation + Q1
   const briefing = await generateBriefing(client, session);
 
@@ -158,9 +173,9 @@ export async function runInterview(session) {
   const ready = await reenterSelect({
     message: 'Ready to start?',
     choices: [
-      { title: 'Yes, let\'s go', value: 'yes' },
-      { title: 'Not right now', value: 'no' }
-    ]
+      { title: "Yes, let's go", value: 'yes' },
+      { title: 'Not right now', value: 'no' },
+    ],
   });
 
   return ready === 'yes';

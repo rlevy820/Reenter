@@ -1,9 +1,9 @@
-// scout/files.js — reads the key files that reveal what a project is.
+// scout/files.ts — reads the key files that reveal what a project is.
 // Looks for known entry points like package.json, README, requirements.txt etc.
 // Caps each file at 1000 chars — enough context, not overwhelming.
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const KEY_FILES = [
   'package.json',
@@ -14,11 +14,11 @@ const KEY_FILES = [
   'Cargo.toml',
   'go.mod',
   'pom.xml',
-  '.env.example'
-];
+  '.env.example',
+] as const;
 
-export function readKeyFiles(dirPath) {
-  const contents = [];
+export function readKeyFiles(dirPath: string): string {
+  const contents: string[] = [];
 
   for (const file of KEY_FILES) {
     const filePath = path.join(dirPath, file);

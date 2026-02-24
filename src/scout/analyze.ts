@@ -1,17 +1,21 @@
-// scout/analyze.js — sends project context to Claude Haiku and gets back the full map.
+// scout/analyze.ts — sends project context to Claude Haiku and gets back the full map.
 // Haiku is used here because this is a read and classify task — fast and cheap.
 // Returns: plain english summary, derived options, and high level steps for each option.
 // This is the GPS route — the whole journey visible before a single step is taken.
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
+import { type Analysis, AnalysisSchema } from '../types.js';
 
-export async function analyzeProject(structure, keyFiles) {
-  // Client created here so dotenv has already loaded the API key by the time this runs
-  const client = new Anthropic();
+export async function analyzeProject(
+  client: Anthropic,
+  structure: string,
+  keyFiles: string
+): Promise<Analysis> {
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 2048,
-    system: 'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
+    system:
+      'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
     messages: [
       {
         role: 'user',
@@ -53,15 +57,17 @@ Rules:
 - Never use technology names (no PHP, MySQL, Node, Python, React, server, database)
 - Instead of "server" say "something that hosts your pages locally"
 - Instead of "database" say "a place that stores your data"
-- 1 to 3 options only — never pad`
+- 1 to 3 options only — never pad`,
       },
       {
         role: 'assistant',
-        content: '{'
-      }
-    ]
+        content: '{',
+      },
+    ],
   });
 
-  const text = '{' + response.content[0].text;
-  return JSON.parse(text);
+  const block = response.content[0];
+  if (!block || block.type !== 'text') throw new Error('Expected text response from AI');
+
+  return AnalysisSchema.parse(JSON.parse(`{${block.text}`));
 }

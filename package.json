@@ -3,13 +3,19 @@
   "version": "0.1.0",
   "description": "A terminal-based tool that helps you re-engage with old projects. Like having a senior dev sit next to you, read through your old code, and get you moving again — without touching anything you didn't approve.",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "bin": {
-    "reenter": "src/index.js"
+    "reenter": "dist/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "biome lint src",
+    "format": "biome format src --write",
+    "check": "biome check src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
@@ -24,9 +30,17 @@
   "homepage": "https://github.com/rlevy820/Reenter#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
-    "@inquirer/select": "^5.1.0",
+    "@inquirer/ansi": "^2.0.3",
+    "@inquirer/core": "^11.1.5",
     "dotenv": "^16.0.0",
-    "inquirer": "^9.0.0",
-    "ora": "^9.3.0"
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@types/node": "^25.3.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

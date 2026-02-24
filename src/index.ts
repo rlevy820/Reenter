@@ -1,23 +1,23 @@
-#!/usr/bin/env node
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import path from 'path';
-
-import { createSession, logHistory } from './session.js';
+import { runInterview } from './briefing/interview.js';
+import reenterSelect, { spin } from './prompt.js';
+import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
-import { analyzeProject } from './scout/analyze.js';
-import reenterSelect, { spin, green } from './prompt.js';
-import { runInterview } from './briefing/interview.js';
+import { createSession, logHistory } from './session.js';
 
 // Always load .env from the Reenter project folder, regardless of where the user runs it from
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 async function main() {
-  const projectPath = process.argv[2]
-    ? path.resolve(process.argv[2])
-    : process.cwd();
+  const projectPath = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
+
+  // Single client — created once, passed to everything that needs it
+  const client = new Anthropic();
 
   // Initialize the session — the spine that holds everything
   const session = createSession({ projectPath, mode: 'run' });
@@ -35,7 +35,7 @@ async function main() {
     session.project.structure = structure;
     session.project.keyFiles = readKeyFiles(projectPath);
 
-    return analyzeProject(session.project.structure, session.project.keyFiles);
+    return analyzeProject(client, structure, session.project.keyFiles);
   });
 
   session.project.summary = analysis.summary;
@@ -47,25 +47,27 @@ async function main() {
   // Let user pick a path
   const selectedValue = await reenterSelect({
     message: "What's next:",
-    choices: session.plan.options.map(opt => ({
+    choices: session.plan.options.map((opt) => ({
       title: opt.title,
       value: opt.value,
-      description: opt.description
-    }))
+      description: opt.description,
+    })),
   });
 
   // Lock in the chosen path
-  session.plan.chosenOption = session.plan.options.find(o => o.value === selectedValue);
-  session.plan.steps = session.plan.chosenOption.steps;
-  logHistory(session, 'user', `Chose: ${session.plan.chosenOption.title}`);
+  const chosen = session.plan.options.find((o) => o.value === selectedValue);
+  if (!chosen) throw new Error(`Unknown option: ${selectedValue}`);
+  session.plan.chosenOption = chosen;
+  session.plan.steps = chosen.steps;
+  logHistory(session, 'user', `Chose: ${chosen.title}`);
 
   console.log();
 
   // Briefing phase — build the shared picture before step 1
-  const confirmed = await runInterview(session);
+  const confirmed = await runInterview(client, session);
 
   if (!confirmed) {
-    console.log('\nNo problem. Come back when you\'re ready.\n');
+    console.log("\nNo problem. Come back when you're ready.\n");
     process.exit(0);
   }
 
