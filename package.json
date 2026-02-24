@@ -1,9 +1,14 @@
 {
   "name": "reenter",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A terminal-based tool that helps you re-engage with old projects. Like having a senior dev sit next to you, read through your old code, and get you moving again — without touching anything you didn't approve.",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "reenter": "src/index.js"
+  },
   "scripts": {
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -11,10 +16,15 @@
     "url": "git+https://github.com/rlevy820/Reenter.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Ryan Levy",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/rlevy820/Reenter/issues"
   },
-  "homepage": "https://github.com/rlevy820/Reenter#readme"
+  "homepage": "https://github.com/rlevy820/Reenter#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "dotenv": "^16.0.0",
+    "inquirer": "^9.0.0"
+  }
 }
