@@ -151,6 +151,13 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ---
 
+## Known Issues / Polish Later
+
+- Summary output occasionally still uses light jargon ("server", "database") — prompt needs tightening to say "a place to live" and "a place to hold data" instead
+- API key setup flow not built yet — right now the key lives in Reenter's own `.env`. Future: first-run setup asks the user for their key and stores it.
+
+---
+
 ## Where We Are
 
 - [x] Problem defined
@@ -162,13 +169,15 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 - [x] Git initialized
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
-- [ ] Mode 1 conversation tree fully mapped
-- [ ] Mode 2 conversation tree mapped
-- [ ] Mode 3 conversation tree mapped
-- [ ] Build begins
+- [x] Mode 1 scan + derived options working
+- [ ] Mode 1 step-by-step guidance after option selection — **this is next**
+- [ ] Mode 2 built
+- [ ] Mode 3 built
+- [ ] First-run API key setup flow
+- [ ] Global install so user can run `reenter` from anywhere
 
 ---
 
 ## Next Step
 
-Finish mapping Mode 1 — specifically how each of the three run options branches from there. Then move to Mode 2 and Mode 3.
+Build out what happens after the user picks an option in Mode 1. The tool currently says "Got it. Working on that next." — it needs to actually walk the user through step 1, wait for confirmation, handle errors in plain english, and move forward one step at a time.
