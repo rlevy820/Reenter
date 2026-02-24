@@ -2,7 +2,7 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
-import inquirer from 'inquirer';
+import { select } from '@inquirer/select';
 import fs from 'fs';
 import path from 'path';
 
@@ -119,30 +119,42 @@ async function main() {
     ? path.resolve(process.argv[2])
     : process.cwd();
 
-  console.log('\nScanning project...\n');
+  // Animated "Reentering..." spinner while Claude reads the project
+  let dotCount = 0;
+  const spinner = setInterval(() => {
+    dotCount = (dotCount % 3) + 1;
+    process.stdout.write(`\rReentering${'.'.repeat(dotCount)}   `);
+  }, 400);
+
+  let analysis;
+  try {
 
   const structure = scanDirectory(projectPath).join('\n');
 
   if (!structure) {
+    clearInterval(spinner);
+    process.stdout.write('\r');
     console.log("This folder looks empty. Point reenter at a project folder.");
     process.exit(1);
   }
 
-  const analysis = await analyzeProject(projectPath, structure);
+    analysis = await analyzeProject(projectPath, structure);
+  } finally {
+    clearInterval(spinner);
+    process.stdout.write('\r' + ' '.repeat(20) + '\r');
+  }
 
   console.log(analysis.summary);
   console.log();
 
-  const { action } = await inquirer.prompt([{
-    type: 'list',
-    name: 'action',
+  const action = await select({
     message: "What's next:",
     choices: analysis.options.map(opt => ({
       name: opt.title,
       value: opt.value,
       description: opt.description
     }))
-  }]);
+  });
 
   console.log('\n→ Got it. Working on that next.\n');
   // Next: branch based on action value and walk through steps
