@@ -1,0 +1,18 @@
+# <type>: <short summary> (50 chars max)
+#
+# Types:
+#   feat     — new feature
+#   fix      — bug fix
+#   docs     — documentation only
+#   refactor — code change that isn't a fix or feature
+#   test     — adding or updating tests
+#   chore    — config, tooling, dependencies
+#
+# Examples:
+#   feat: add interactive prompt for mode selection
+#   fix: handle missing package.json gracefully
+#   docs: update README with install instructions
+#   refactor: split project analyzer into separate module
+#
+# Body (optional, wrap at 72 chars):
+# Explain WHY, not what. The diff shows what.
