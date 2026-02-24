@@ -169,9 +169,60 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 ---
 
+## Project Structure (locked)
+
+```
+src/
+  index.js          — entry point only, wires everything together
+  session.js        — the spine, holds all state for the entire session
+  prompt.js         — all custom terminal UI lives here
+
+  scout/            — understands the project before anything happens
+    directory.js    — scans folder structure
+    files.js        — reads key files (package.json, README, etc.)
+    analyze.js      — Haiku builds the full high level map
+
+  briefing/         — shows the user what they're getting into before step 1
+    precheck.js     — runs environment checks with user consent
+    present.js      — presents the pre-flight picture, gets confirmation
+
+  walkthrough/      — guided step-by-step execution
+    steps.js        — manages step progression and state
+    check.js        — runs commands, captures output, reports back
+    respond.js      — handles what the user says at each step
+```
+
+**Why this structure:** Each folder has one job. Named after what they mean in the product, not what they do technically. Scout, Briefing, Walkthrough — anyone can navigate this at 2am.
+
+---
+
+## The Execution Pattern (locked)
+
+This pattern repeats throughout the entire walkthrough phase:
+
+```
+AI knows what's needed for this step
+↓
+AI says why in plain english — short, specific, trustworthy
+↓
+"Can I check if you have it? Run this:" [shows exact command]
+↓
+> Yes, run it
+  No, skip it
+  [type something else]
+↓
+AI reads the real output and responds to what it actually found
+↓
+Move forward only when user confirms
+```
+
+Never assumes. Always checks. Always asks permission. Always shows what it's running and why.
+
+---
+
 ## Known Issues / Polish Later
 
-- Summary output occasionally still uses light jargon ("server", "database") — prompt needs tightening to say "a place to live" and "a place to hold data" instead
+- Summary output occasionally still uses light jargon ("server", "database") — fixed in analyze.js prompt but needs testing
 - API key setup flow not built yet — right now the key lives in Reenter's own `.env`. Future: first-run setup asks the user for their key and stores it.
 
 ---
@@ -188,14 +239,18 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
 - [x] Mode 1 scan + derived options working
-- [ ] Mode 1 step-by-step guidance after option selection — **this is next**
+- [x] Custom terminal UI (prompt.js) — inline description on hover
+- [x] Two-level planning model — high level map + step-by-step execution
+- [x] Project refactored into scout/briefing/walkthrough + session spine
+- [ ] Briefing phase — **this is next**
+- [ ] Walkthrough phase — check.js, respond.js, steps.js
 - [ ] Mode 2 built
 - [ ] Mode 3 built
 - [ ] First-run API key setup flow
-- [ ] Global install so user can run `reenter` from anywhere
+- [ ] Global install (`reenter` from anywhere)
 
 ---
 
 ## Next Step
 
-Build out what happens after the user picks an option in Mode 1. The tool currently says "Got it. Working on that next." — it needs to actually walk the user through step 1, wait for confirmation, handle errors in plain english, and move forward one step at a time.
+Design and build the briefing phase. This is the moment between picking an option and starting step 1. The user sees what they're actually getting into — based on real environment checks, not guesses. They confirm before anything starts. Nothing moves without a clear yes.
