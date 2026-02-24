@@ -11,8 +11,7 @@
 //   4. Confirm
 
 import Anthropic from '@anthropic-ai/sdk';
-import ora from 'ora';
-import reenterSelect, { reenterInput } from '../prompt.js';
+import reenterSelect, { reenterInput, think } from '../prompt.js';
 import { logHistory } from '../session.js';
 
 const MODEL = 'claude-sonnet-4-6';
@@ -31,7 +30,7 @@ async function generateBriefing(client, session) {
   const { summary, structure, keyFiles } = session.project;
   const { chosenOption } = session.plan;
 
-  const response = await client.messages.create({
+  const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 512,
     system: 'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
@@ -77,7 +76,7 @@ Rules:
     ]
   });
 
-  return parseJSON(response.content[0].text);
+  return think('reading between the lines', stream, msg => parseJSON(msg.content[0].text));
 }
 
 // ─── Generate synthesis ───────────────────────────────────────────────────────
@@ -87,7 +86,7 @@ async function generateSynthesis(client, session) {
   const { questions, answers } = session.briefing;
   const q1 = questions[0];
 
-  const response = await client.messages.create({
+  const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 128,
     system: 'You are a JSON API. You only respond with raw JSON. No markdown, no explanation, no prose. Just JSON.',
@@ -107,7 +106,7 @@ Return raw JSON only:
     ]
   });
 
-  return parseJSON(response.content[0].text).synthesis;
+  return think('putting it together', stream, msg => parseJSON(msg.content[0].text).synthesis);
 }
 
 // ─── Ask a question ───────────────────────────────────────────────────────────
@@ -134,41 +133,27 @@ export async function runInterview(session) {
   // Client created here so dotenv has already loaded the API key by the time this runs
   const client = new Anthropic();
 
-  // Generate presentation + Q1
-  const spinner = ora({ text: 'Reading between the lines', color: 'cyan', spinner: 'dots' }).start();
-  let briefing;
-  try {
-    briefing = await generateBriefing(client, session);
-  } finally {
-    spinner.stop();
-  }
+  // Presentation + Q1
+  const briefing = await generateBriefing(client, session);
 
   session.briefing.presentation = briefing.presentation;
   session.briefing.questions.push(briefing.question);
 
-  // Show what the agent found, then ask Q1
-  console.log();
-  console.log(briefing.presentation);
+  process.stdout.write(`\n${briefing.presentation}\n`);
 
   const answer = await askQuestion(briefing.question);
   session.briefing.answers[briefing.question.id] = answer;
   logHistory(session, 'user', `${briefing.question.text} → ${answer}`);
 
-  // Synthesize
-  const synthSpinner = ora({ text: 'Putting it together', color: 'cyan', spinner: 'dots' }).start();
-  let synthesis;
-  try {
-    synthesis = await generateSynthesis(client, session);
-  } finally {
-    synthSpinner.stop();
-  }
+  process.stdout.write('\n');
+
+  // Synthesis
+  const synthesis = await generateSynthesis(client, session);
 
   session.briefing.synthesis = synthesis;
   logHistory(session, 'ai', synthesis);
 
-  console.log();
-  console.log(synthesis);
-  console.log();
+  process.stdout.write(`\n${synthesis}\n\n`);
 
   const ready = await reenterSelect({
     message: 'Ready to start?',

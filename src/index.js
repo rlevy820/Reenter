@@ -2,13 +2,12 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import ora from 'ora';
 
 import { createSession, logHistory } from './session.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
 import { analyzeProject } from './scout/analyze.js';
-import reenterSelect from './prompt.js';
+import reenterSelect, { spin, green } from './prompt.js';
 import { runInterview } from './briefing/interview.js';
 
 // Always load .env from the Reenter project folder, regardless of where the user runs it from
@@ -24,33 +23,26 @@ async function main() {
   const session = createSession({ projectPath, mode: 'run' });
 
   // Scout phase — understand the project
-  const spinner = ora({ text: 'Reentering', color: 'cyan', spinner: 'dots' }).start();
+  const analysis = await spin('Reentering', 'Reentering', async () => {
+    const structure = scanDirectory(projectPath).join('\n');
 
-  try {
-    session.project.structure = scanDirectory(projectPath).join('\n');
-
-    if (!session.project.structure) {
-      spinner.fail('This folder looks empty. Point reenter at a project folder.');
+    if (!structure) {
+      process.stdout.write('\r\x1b[2K\n');
+      console.error('This folder looks empty. Point reenter at a project folder.');
       process.exit(1);
     }
 
+    session.project.structure = structure;
     session.project.keyFiles = readKeyFiles(projectPath);
 
-    const analysis = await analyzeProject(
-      session.project.structure,
-      session.project.keyFiles
-    );
+    return analyzeProject(session.project.structure, session.project.keyFiles);
+  });
 
-    session.project.summary = analysis.summary;
-    session.plan.options = analysis.options;
-
-  } finally {
-    spinner.stop();
-  }
+  session.project.summary = analysis.summary;
+  session.plan.options = analysis.options;
 
   // Show summary
-  console.log(session.project.summary);
-  console.log();
+  process.stdout.write(`\n${session.project.summary}\n\n`);
 
   // Let user pick a path
   const selectedValue = await reenterSelect({
