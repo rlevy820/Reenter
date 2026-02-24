@@ -140,12 +140,16 @@ function collectFiles(dirPath: string, result: string[]): void {
   }
 }
 
-export function deepReadFiles(dirPath: string): string {
+export function deepReadFiles(
+  dirPath: string,
+  onProgress?: (files: number, chars: number) => void
+): string {
   const filePaths: string[] = [];
   collectFiles(dirPath, filePaths);
 
   const contents: string[] = [];
   let totalChars = 0;
+  let fileCount = 0;
 
   for (const filePath of filePaths) {
     if (totalChars >= MAX_TOTAL_CHARS) break;
@@ -155,6 +159,8 @@ export function deepReadFiles(dirPath: string): string {
       const entry = `--- ${relative} ---\n${content}`;
       contents.push(entry);
       totalChars += entry.length;
+      fileCount++;
+      onProgress?.(fileCount, totalChars);
     } catch {
       // skip unreadable files
     }

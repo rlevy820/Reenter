@@ -3,10 +3,10 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { MODES } from './options.js';
-import reenterSelect, { formatTextBlock, spin, withMargin } from './prompt.js';
+import reenterSelect, { deepSpin, formatTextBlock, spin, withMargin } from './prompt.js';
 import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
-import { readKeyFiles } from './scout/files.js';
+import { deepReadFiles, readKeyFiles } from './scout/files.js';
 import { createSession, logHistory } from './session.js';
 import { saveStartingPoint } from './walkthrough/git.js';
 
@@ -73,6 +73,14 @@ async function main() {
 
   // Walkthrough — step 1: save starting point before anything changes
   await saveStartingPoint(projectPath);
+
+  // Walkthrough — deep scan: read everything before the assessment loop
+  process.stdout.write('\n');
+  const deepFiles = await deepSpin('Taking a closer look', 'All caught up', (update) =>
+    Promise.resolve(deepReadFiles(projectPath, update))
+  );
+
+  session.project.keyFiles = deepFiles;
 }
 
 main();

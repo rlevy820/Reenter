@@ -249,6 +249,68 @@ export async function spin<T>(
   }
 }
 
+// ─── Deep scan spinner ────────────────────────────────────────────────────────
+// Like spin(), but shows live file and char counts as the scan progresses.
+// The taskFn receives an update(files, chars) callback to call as it reads.
+// On completion: shows the final counts in gray next to the done label.
+//
+// Usage:
+//   const result = await deepSpin('Taking a closer look', 'All caught up', (update) => {
+//     return Promise.resolve(deepReadFiles(path, update));
+//   });
+export async function deepSpin<T>(
+  label: string,
+  doneLabel: string,
+  taskFn: (update: (files: number, chars: number) => void) => Promise<T>
+): Promise<T> {
+  let files = 0;
+  let chars = 0;
+  let blinkOn = true;
+  let done = false;
+  const startTime = Date.now();
+
+  function elapsed() {
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+  }
+
+  function render() {
+    process.stdout.write(
+      `\r\x1b[2K${pulseDot(blinkOn)} ${gray(`(${label}  · ${files} files · ${chars.toLocaleString()} chars · ${elapsed()})`)}`
+    );
+  }
+
+  const ticker = setInterval(() => {
+    if (!done) {
+      blinkOn = !blinkOn;
+      render();
+    }
+  }, 400);
+
+  render();
+
+  function update(f: number, c: number) {
+    files = f;
+    chars = c;
+    render();
+  }
+
+  try {
+    const result = await taskFn(update);
+    done = true;
+    clearInterval(ticker);
+    process.stdout.write(
+      `\r\x1b[2K${green('●')} ${doneLabel}  ${gray(`(${files} files · ${chars.toLocaleString()} chars)`)}\n`
+    );
+    return result;
+  } catch (err) {
+    done = true;
+    clearInterval(ticker);
+    process.stdout.write(`\r\x1b[2K\n`);
+    throw err;
+  }
+}
+
 // ─── Free-text input ──────────────────────────────────────────────────────────
 // Built with raw mode — not @inquirer/core.
 // Natural text area behavior - let the terminal handle cursor positioning.
