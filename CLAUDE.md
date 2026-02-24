@@ -158,14 +158,54 @@ The menu stays Browse / Run / MVP / Ship. The pipeline is handled internally —
    c. **Machine check** — one consent moment: "Can I check what's installed on your machine?" If yes, runs silent checks and factors results into the plan
    d. **Execution loop** — one step at a time, chat mode, consent before every action
 
-**Assessment (step 2) design:**
-- One Sonnet call — reads project deeply (more than 2 levels), understands tech stack, services, what's needed to boot
-- Produces: brief plain english summary of what it found + any questions it can't answer from files
-- No stubbing recommendations — real setup only
-- Dependency thinking:
-  - Hard blockers (app won't start): must resolve
-  - Soft blockers (feature breaks after start): note and move on — e.g. "Stripe won't work but the rest will"
-  - If user says no to machine check: generate steps anyway, best guess based on project files
+**Assessment loop (step 2) design — locked:**
+
+One loop. One AI call per iteration. Ends when AI says `ready`.
+
+Each AI call receives:
+- Project structure + key files (deep scan)
+- All checks run so far + their output
+- All questions answered so far
+- All skips + what was skipped
+- Mode (run / mvp / ship)
+
+Each AI call returns one of four action types:
+
+```
+check       — a command to run on the machine
+              { type, name, description, command, cwd }
+              name = technical name (e.g. "Node.js")
+              description = plain english: what it does (e.g. "the software this app runs on")
+
+question    — something only the user knows
+              { type, text, options? }
+
+instruction — something needs installing or fixing
+              { type, summary, steps: string[] }
+              steps = numbered plain english instructions
+              after user is done: "Want me to check if that worked?" → re-runs original check
+
+ready       — everything needed is in place, start the app
+              { type, startCommand, notes: string[] }
+              notes = soft blockers — specific warnings about what won't work
+```
+
+Skip handling: user can skip any check. AI warns specifically what that skip means — not generic.
+
+Language rule: always `Name — plain phrase saying what it does`. Never vague metaphors.
+- ✓ "Node.js — the software this app runs on"
+- ✗ "the engine that runs this app"
+
+**Build tasks (in order):**
+
+1. **Deep scan** — expand `readKeyFiles` to find and read all config files (docker-compose, .env.example, Makefile, Procfile, .nvmrc, lock files, etc.) — feeds the AI better context
+2. **Zod schemas** — define the loop response types (`CheckAction`, `QuestionAction`, `InstructionAction`, `ReadyAction`) in `types.ts` — this is the contract everything else is built around
+3. **AI loop call** — Sonnet call in `src/walkthrough/assess.ts` that takes session state and returns the next action
+4. **Check runner** — `src/walkthrough/check.ts` — shows command + description + consent, runs it, captures output, stores in session
+5. **Instruction presenter** — shows numbered steps, then asks to verify, re-runs check if yes
+6. **Question presenter** — shows question + options or free text, stores answer in session
+7. **Loop orchestrator** — `src/walkthrough/assess.ts` — ties all the above together, runs until `ready`
+8. **Wire into index.ts** — replace walkthrough placeholder with the assessment loop
 
 **Git pre-flight (locked):**
 - Always runs first, always shows "Saving your starting point" spinner
