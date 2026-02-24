@@ -1,5 +1,7 @@
 # Reenter — Project Briefing for Claude
 
+**Authors:** Ryan Levy & Claude
+
 Read this before doing anything. This is the context for every session.
 
 ---
