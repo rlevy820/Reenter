@@ -48,7 +48,7 @@ async function main() {
 
   // Fixed menu — always the same four options
   const selectedValue = await reenterSelect({
-    message: 'What do you want to do with it:',
+    message: "What's next:",
     choices: MODES.map((m) => ({
       title: m.title,
       value: m.value,
