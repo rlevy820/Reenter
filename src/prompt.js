@@ -13,7 +13,7 @@ import {
   isDownKey,
   isEnterKey,
 } from '@inquirer/core';
-import { cursorHide, cursorShow } from '@inquirer/ansi';
+import { cursorHide } from '@inquirer/ansi';
 
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 const dim  = (s) => `\x1b[90m${s}\x1b[0m`;
@@ -163,27 +163,82 @@ export async function spin(label, doneLabel, taskFn) {
 
 export { green };
 
-// Free-text input prompt. Used for open-ended interview questions.
-// Matches the visual style of reenterSelect.
-export const reenterInput = createPrompt((config, done) => {
-  const { message } = config;
-  const [status, setStatus] = useState('idle');
-  const [value, setValue] = useState('');
-  const prefix = usePrefix({ status });
+// Free-text input prompt. Built with raw mode — not @inquirer/core.
+// Natural text area behavior - let the terminal handle cursor positioning.
+export function reenterInput({ message }) {
+  return new Promise((resolve) => {
+    const width = process.stdout.columns || 80;
+    const bar = '\x1b[90m' + '─'.repeat(width) + '\x1b[0m';
+    const prefixLen = 2; // '❯ ' length
+    
+    let value = '';
+    let prevLines = 1;
 
-  useKeypress((key, rl) => {
-    if (isEnterKey(key)) {
-      const answer = rl.line.trim();
-      setStatus('done');
-      done(answer);
-    } else {
-      setValue(rl.line);
+    function calculateLines() {
+      const textLength = prefixLen + value.length;
+      return Math.ceil(textLength / width) || 1;
     }
+
+    function redraw() {
+      const currentLines = calculateLines();
+      
+      // Clear all lines that the previous text occupied
+      if (prevLines > 0) {
+        for (let i = 0; i < prevLines; i++) {
+          process.stdout.write('\r\x1b[K'); // Clear current line
+          if (i < prevLines - 1) {
+            process.stdout.write('\x1b[A'); // Move up one line
+          }
+        }
+        process.stdout.write('\r'); // Go to start of line
+      }
+      
+      prevLines = currentLines;
+
+      // Write the prefix and current value, let terminal wrap naturally
+      process.stdout.write(`\x1b[90m❯ \x1b[0m${value}`);
+    }
+
+    function finish() {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stdin.removeAllListeners('data');
+      
+      // Clear all lines
+      for (let i = 0; i < prevLines; i++) {
+        process.stdout.write('\r\x1b[K');
+        if (i < prevLines - 1) {
+          process.stdout.write('\x1b[A');
+        }
+      }
+      process.stdout.write(`\r${green('●')} ${message}  ${cyan(value)}\n`);
+      resolve(value.trim());
+    }
+
+    // Draw initial box
+    process.stdout.write(`${bar}\n`);
+    
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    redraw();
+
+    process.stdin.on('data', (key) => {
+      if (key === '\r' || key === '\n') {
+        process.stdout.write(`\n${bar}\n`);
+        finish();
+      } else if (key === '\x7f') { // Backspace
+        if (value.length > 0) {
+          value = value.slice(0, -1);
+          redraw();
+        }
+      } else if (key === '\x03') { // Ctrl+C
+        process.stdin.setRawMode(false);
+        process.exit();
+      } else if (key.charCodeAt(0) >= 32 && !key.startsWith('\x1b')) {
+        value += key;
+        redraw();
+      }
+    });
   });
-
-  if (status === 'done') {
-    return `${cursorShow}${green('●')} ${bold(message)}  ${cyan(value)}`;
-  }
-
-  return `${cursorHide}${prefix} ${bold(message)}\n  ${value}`;
-});
+}
