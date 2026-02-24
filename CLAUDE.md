@@ -24,10 +24,24 @@ Built by and for self-taught developers who:
 
 - **Deterministic flow** — every question has a purpose, every answer leads somewhere specific. No willy nilly.
 - **LLM powered** — intelligent enough to adapt to any project type, language, or structure
-- **One thing at a time** — never overwhelming, always a clear next step
+- **One thing at a time** — never overwhelming, always a clear next step. Lightweight is a hard constraint, not a preference. Agents that try to do everything at once is the exact problem this tool is solving for — it would be ironic to build it that way.
 - **Plain english** — speak like a senior dev who teaches well, not a textbook. Short, clear, a bit of context/history when useful.
 - **Read before touch** — never change anything without explicit user approval
-- **Design before code** — the conversation tree and experience must be fully designed before any coding begins
+- **Design before code** — the conversation tree and experience must be fully designed before any coding begins. Never hear a problem and immediately jump to "let's start coding." That's the failure mode this project was born from.
+- **Phase gates** — each phase has an explicit done signal before moving to the next. Don't bleed phases together. Ask the user if they're ready to move on.
+- **Build for the user first** — this was built for one specific person. Don't over-engineer, don't design for hypothetical users, don't add features that weren't asked for.
+
+---
+
+## Division of Labor
+
+The user brings taste, judgment, and the call on what feels right. Claude brings knowledge of what's technically possible, what patterns exist, and what the tradeoffs are. Decisions always belong to the user. Claude presents options — never makes choices unilaterally.
+
+---
+
+## The Failure Mode to Never Repeat
+
+The user has been burned by AI that hears a problem and immediately jumps to action. Doing the right thing in the wrong way is still wrong. The way this tool does things matters more than what it does. When in doubt, slow down and ask.
 
 ---
 
