@@ -31,6 +31,10 @@ export const SynthesisResponseSchema = z.object({
   synthesis: z.string(),
 });
 
+export const OrientationSchema = z.object({
+  orientation: z.string(),
+});
+
 // ─── Mode ─────────────────────────────────────────────────────────────────────
 
 // A menu item — fixed, not AI-derived

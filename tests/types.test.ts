@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AnalysisSchema,
   BriefingResponseSchema,
+  OrientationSchema,
   QuestionSchema,
   StepsSchema,
   SynthesisResponseSchema,
@@ -103,6 +104,26 @@ describe('BriefingResponseSchema', () => {
   it('throws when question has wrong type', () => {
     const bad = { ...validBriefing, question: { ...validBriefing.question, type: 'free' } };
     expect(() => BriefingResponseSchema.parse(bad)).toThrow();
+  });
+});
+
+// ─── OrientationSchema ────────────────────────────────────────────────────────
+
+describe('OrientationSchema', () => {
+  it('parses a valid orientation', () => {
+    expect(() =>
+      OrientationSchema.parse({
+        orientation: "First we'll get all the pieces your app needs downloaded onto your machine.",
+      })
+    ).not.toThrow();
+  });
+
+  it('throws on missing orientation', () => {
+    expect(() => OrientationSchema.parse({})).toThrow();
+  });
+
+  it('throws on non-string orientation', () => {
+    expect(() => OrientationSchema.parse({ orientation: 42 })).toThrow();
   });
 });
 
