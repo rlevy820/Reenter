@@ -12,7 +12,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 import type { z } from 'zod';
-import reenterSelect, { reenterInput, think, formatTextBlock } from '../prompt.js';
+import reenterSelect, { formatTextBlock, reenterInput, think } from '../prompt.js';
 import { logHistory } from '../session.js';
 import type { Question, Session } from '../types.js';
 import { BriefingResponseSchema, SynthesisResponseSchema } from '../types.js';

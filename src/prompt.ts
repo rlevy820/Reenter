@@ -29,19 +29,19 @@ const DOT_MARGIN = '  '; // Width of "● " (dot + space)
 export function withMargin(text: string): string {
   const terminalWidth = process.stdout.columns || 80;
   const availableWidth = terminalWidth - DOT_MARGIN.length;
-  
+
   return text
     .split('\n')
     .map((line) => {
       if (line.length <= availableWidth) {
         return DOT_MARGIN + line;
       }
-      
+
       // Handle long lines by wrapping them while maintaining indentation
       const words = line.split(' ');
       const wrappedLines: string[] = [];
       let currentLine = '';
-      
+
       for (const word of words) {
         const testLine = currentLine ? `${currentLine} ${word}` : word;
         if (testLine.length <= availableWidth) {
@@ -56,11 +56,11 @@ export function withMargin(text: string): string {
           }
         }
       }
-      
+
       if (currentLine) {
         wrappedLines.push(DOT_MARGIN + currentLine);
       }
-      
+
       return wrappedLines.join('\n');
     })
     .join('\n');

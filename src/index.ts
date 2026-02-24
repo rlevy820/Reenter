@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { runInterview } from './briefing/interview.js';
-import reenterSelect, { spin, formatTextBlock, withMargin } from './prompt.js';
+import reenterSelect, { formatTextBlock, spin, withMargin } from './prompt.js';
 import { analyzeProject } from './scout/analyze.js';
 import { scanDirectory } from './scout/directory.js';
 import { readKeyFiles } from './scout/files.js';
@@ -28,7 +28,9 @@ async function main() {
 
     if (!structure) {
       process.stdout.write('\r\x1b[2K\n');
-      process.stdout.write(withMargin('This folder looks empty. Point reenter at a project folder.\n'));
+      process.stdout.write(
+        withMargin('This folder looks empty. Point reenter at a project folder.\n')
+      );
       process.exit(1);
     }
 
@@ -71,7 +73,7 @@ async function main() {
     process.exit(0);
   }
 
-  // Walkthrough phase — coming next  
+  // Walkthrough phase — coming next
   process.stdout.write(formatTextBlock('\x1b[90mWalkthrough coming next.\x1b[0m'));
 }
 
