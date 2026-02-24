@@ -44,11 +44,11 @@ KEY FILE CONTENTS:
 ${keyFiles || 'No key files found.'}
 
 Return raw JSON only:
-{ "summary": "..." }`,
+{ "summary": "This looks like ..." }`,
       },
       {
         role: 'assistant',
-        content: '{',
+        content: '{"summary": "This looks like',
       },
     ],
   });
@@ -56,7 +56,7 @@ Return raw JSON only:
   const block = response.content[0];
   if (!block || block.type !== 'text') throw new Error('Expected text response from AI');
 
-  return AnalysisSchema.parse(JSON.parse(`{${block.text}`));
+  return AnalysisSchema.parse(JSON.parse(`{"summary": "This looks like${block.text}`));
 }
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
