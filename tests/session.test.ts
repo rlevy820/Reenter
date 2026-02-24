@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSession, logCheck, logHistory } from '../src/session.js';
+import { createSession, logAttempt, logHistory } from '../src/session.js';
 
 // ─── createSession ────────────────────────────────────────────────────────────
 
@@ -50,10 +50,10 @@ describe('createSession', () => {
     expect(session.briefing.synthesis).toBeNull();
   });
 
-  it('starts with empty history and checks', () => {
+  it('starts with empty history and attempts', () => {
     const session = createSession({ projectPath: '/foo/bar', mode: 'run' });
     expect(session.history).toEqual([]);
-    expect(session.checks).toEqual([]);
+    expect(session.attempts).toEqual([]);
   });
 });
 
@@ -90,34 +90,36 @@ describe('logHistory', () => {
   });
 });
 
-// ─── logCheck ─────────────────────────────────────────────────────────────────
+// ─── logAttempt ───────────────────────────────────────────────────────────────
 
-describe('logCheck', () => {
-  it('appends a check entry with all fields', () => {
+describe('logAttempt', () => {
+  it('appends an attempt with all fields', () => {
     const session = createSession({ projectPath: '/foo', mode: 'run' });
-    logCheck(session, {
-      command: 'node --version',
-      output: 'v18.0.0',
-      conclusion: 'Node is installed',
+    logAttempt(session, {
+      type: 'start',
+      description: 'Tried running the PHP server',
+      command: 'php -S localhost:8000',
+      output: 'PHP server started',
+      userReport: 'Page loaded but database error',
     });
-    expect(session.checks).toHaveLength(1);
-    expect(session.checks[0].command).toBe('node --version');
-    expect(session.checks[0].output).toBe('v18.0.0');
-    expect(session.checks[0].conclusion).toBe('Node is installed');
+    expect(session.attempts).toHaveLength(1);
+    expect(session.attempts[0].command).toBe('php -S localhost:8000');
+    expect(session.attempts[0].userReport).toBe('Page loaded but database error');
   });
 
   it('adds a timestamp automatically', () => {
     const session = createSession({ projectPath: '/foo', mode: 'run' });
-    logCheck(session, { command: 'ls', output: 'file.txt', conclusion: 'directory is not empty' });
-    expect(session.checks[0].at).toBeTruthy();
+    logAttempt(session, { type: 'fix', description: 'Started MySQL' });
+    expect(session.attempts[0].at).toBeTruthy();
   });
 
-  it('appends multiple checks in order', () => {
+  it('appends multiple attempts in order', () => {
     const session = createSession({ projectPath: '/foo', mode: 'run' });
-    logCheck(session, { command: 'node -v', output: 'v18', conclusion: 'ok' });
-    logCheck(session, { command: 'npm -v', output: '9.0', conclusion: 'ok' });
-    expect(session.checks).toHaveLength(2);
-    expect(session.checks[0].command).toBe('node -v');
-    expect(session.checks[1].command).toBe('npm -v');
+    logAttempt(session, { type: 'start', description: 'First attempt' });
+    logAttempt(session, { type: 'fix', description: 'Fixed something' });
+    logAttempt(session, { type: 'start', description: 'Second attempt' });
+    expect(session.attempts).toHaveLength(3);
+    expect(session.attempts[0].description).toBe('First attempt');
+    expect(session.attempts[2].description).toBe('Second attempt');
   });
 });

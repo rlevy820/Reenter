@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   AnalysisSchema,
-  AssessmentActionSchema,
+  AskActionSchema,
   BriefingResponseSchema,
-  CheckActionSchema,
-  InstructionActionSchema,
+  DoneActionSchema,
+  FixActionSchema,
   OrientationSchema,
-  QuestionActionSchema,
   QuestionSchema,
-  ReadyActionSchema,
+  RunActionSchema,
+  StartActionSchema,
   StepsSchema,
   SynthesisResponseSchema,
 } from '../src/types.js';
@@ -112,156 +112,125 @@ describe('BriefingResponseSchema', () => {
   });
 });
 
-// ─── Assessment action schemas ────────────────────────────────────────────────
+// ─── Run loop action schemas ───────────────────────────────────────────────────
 
-describe('CheckActionSchema', () => {
-  const validCheck = {
-    type: 'check' as const,
-    name: 'Node.js',
-    description: 'the software this app runs on',
-    reason: 'Node.js is what this app runs on — without it, the app cannot start.',
-    command: 'node --version',
+describe('StartActionSchema', () => {
+  const valid = {
+    type: 'start' as const,
+    command: 'php -S localhost:8000',
+    reason: 'This is the built-in PHP server — no extra setup needed.',
+    expectation: 'You should see a server log and be able to open localhost:8000.',
   };
 
-  it('parses a valid check action', () => {
-    expect(() => CheckActionSchema.parse(validCheck)).not.toThrow();
-  });
-
-  it('throws on wrong type', () => {
-    expect(() =>
-      CheckActionSchema.parse({ ...validCheck, type: 'question' })
-    ).toThrow();
+  it('parses a valid start action', () => {
+    expect(() => StartActionSchema.parse(valid)).not.toThrow();
   });
 
   it('throws on missing command', () => {
-    const { command: _, ...noCommand } = validCheck;
-    expect(() => CheckActionSchema.parse(noCommand)).toThrow();
+    const { command: _, ...rest } = valid;
+    expect(() => StartActionSchema.parse(rest)).toThrow();
   });
 
-  it('throws on missing reason', () => {
-    const { reason: _, ...noReason } = validCheck;
-    expect(() => CheckActionSchema.parse(noReason)).toThrow();
+  it('throws on missing expectation', () => {
+    const { expectation: _, ...rest } = valid;
+    expect(() => StartActionSchema.parse(rest)).toThrow();
   });
 });
 
-describe('QuestionActionSchema', () => {
-  it('parses a question with options', () => {
+describe('FixActionSchema', () => {
+  it('parses with installCommand and verifyCommand', () => {
     expect(() =>
-      QuestionActionSchema.parse({
-        type: 'question',
+      FixActionSchema.parse({
+        type: 'fix',
+        problem: "MySQL isn't running",
+        installCommand: 'brew services start mysql',
+        steps: ['Open System Preferences', 'Start MySQL from the MySQL pane'],
+        verifyCommand: 'mysqladmin ping',
+      })
+    ).not.toThrow();
+  });
+
+  it('parses without optional fields', () => {
+    expect(() =>
+      FixActionSchema.parse({
+        type: 'fix',
+        problem: 'Missing .env file',
+        steps: ['Copy .env.example to .env', 'Fill in your values'],
+      })
+    ).not.toThrow();
+  });
+
+  it('throws on missing steps', () => {
+    expect(() => FixActionSchema.parse({ type: 'fix', problem: 'Something is wrong' })).toThrow();
+  });
+});
+
+describe('AskActionSchema', () => {
+  it('parses with options', () => {
+    expect(() =>
+      AskActionSchema.parse({
+        type: 'ask',
         text: 'Did you ever set up a database for this?',
         options: ['Yes', 'No', 'Not sure'],
       })
     ).not.toThrow();
   });
 
-  it('parses a question without options (free text)', () => {
+  it('parses without options (free text)', () => {
     expect(() =>
-      QuestionActionSchema.parse({ type: 'question', text: 'What port does this run on?' })
+      AskActionSchema.parse({ type: 'ask', text: 'What port does this usually run on?' })
     ).not.toThrow();
   });
 
   it('throws on missing text', () => {
-    expect(() => QuestionActionSchema.parse({ type: 'question' })).toThrow();
+    expect(() => AskActionSchema.parse({ type: 'ask' })).toThrow();
   });
 });
 
-describe('InstructionActionSchema', () => {
-  it('parses with installCommand and verifyCommand', () => {
+describe('DoneActionSchema', () => {
+  it('parses with url and notes', () => {
     expect(() =>
-      InstructionActionSchema.parse({
-        type: 'instruction',
-        summary: "PHP isn't installed",
-        installCommand: 'brew install php',
-        steps: ['Go to php.net', 'Download and run the installer'],
-        verifyCommand: 'php --version',
+      DoneActionSchema.parse({
+        type: 'done',
+        url: 'http://localhost:8000',
+        notes: ["The admin panel won't work without a database"],
       })
     ).not.toThrow();
   });
 
-  it('parses without installCommand', () => {
-    expect(() =>
-      InstructionActionSchema.parse({
-        type: 'instruction',
-        summary: 'Create a .env file',
-        steps: ['Copy .env.example to .env', 'Fill in your values'],
-      })
-    ).not.toThrow();
+  it('parses without url', () => {
+    expect(() => DoneActionSchema.parse({ type: 'done', notes: [] })).not.toThrow();
   });
 
-  it('parses without verifyCommand', () => {
-    expect(() =>
-      InstructionActionSchema.parse({
-        type: 'instruction',
-        summary: "Node.js isn't installed",
-        installCommand: 'brew install node',
-        steps: ['Go to nodejs.org', 'Run the installer'],
-      })
-    ).not.toThrow();
-  });
-
-  it('throws on missing steps', () => {
-    expect(() =>
-      InstructionActionSchema.parse({ type: 'instruction', summary: 'Do something' })
-    ).toThrow();
+  it('throws on missing notes', () => {
+    expect(() => DoneActionSchema.parse({ type: 'done' })).toThrow();
   });
 });
 
-describe('ReadyActionSchema', () => {
-  it('parses a valid ready action', () => {
-    expect(() =>
-      ReadyActionSchema.parse({
-        type: 'ready',
-        startCommand: 'npm start',
-        notes: ["The payment page won't work without Stripe keys"],
-      })
-    ).not.toThrow();
-  });
-
-  it('parses with empty notes', () => {
-    expect(() =>
-      ReadyActionSchema.parse({ type: 'ready', startCommand: 'npm start', notes: [] })
-    ).not.toThrow();
-  });
-
-  it('throws on missing startCommand', () => {
-    expect(() => ReadyActionSchema.parse({ type: 'ready', notes: [] })).toThrow();
-  });
-});
-
-describe('AssessmentActionSchema', () => {
+describe('RunActionSchema', () => {
   it('parses each action type via the discriminated union', () => {
     expect(() =>
-      AssessmentActionSchema.parse({
-        type: 'check',
-        name: 'Node.js',
-        description: 'the software this app runs on',
-        reason: 'Node.js is what this app runs on — without it, the app cannot start.',
-        command: 'node --version',
+      RunActionSchema.parse({
+        type: 'start',
+        command: 'php -S localhost:8000',
+        reason: 'Built-in PHP server.',
+        expectation: 'Server log and a page at localhost:8000.',
       })
     ).not.toThrow();
 
     expect(() =>
-      AssessmentActionSchema.parse({ type: 'question', text: 'Did you have a database?' })
+      RunActionSchema.parse({ type: 'fix', problem: 'MySQL is not running', steps: ['Start it'] })
     ).not.toThrow();
 
     expect(() =>
-      AssessmentActionSchema.parse({
-        type: 'instruction',
-        summary: 'Node.js is missing',
-        steps: ['Install it'],
-      })
+      RunActionSchema.parse({ type: 'ask', text: 'Do you have a database set up?' })
     ).not.toThrow();
 
-    expect(() =>
-      AssessmentActionSchema.parse({ type: 'ready', startCommand: 'npm start', notes: [] })
-    ).not.toThrow();
+    expect(() => RunActionSchema.parse({ type: 'done', notes: [] })).not.toThrow();
   });
 
   it('throws on unknown type', () => {
-    expect(() =>
-      AssessmentActionSchema.parse({ type: 'unknown', command: 'ls' })
-    ).toThrow();
+    expect(() => RunActionSchema.parse({ type: 'unknown', command: 'ls' })).toThrow();
   });
 });
 

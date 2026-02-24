@@ -35,54 +35,53 @@ export const OrientationSchema = z.object({
   orientation: z.string(),
 });
 
-// ─── Assessment loop actions ──────────────────────────────────────────────────
+// ─── Run loop actions ─────────────────────────────────────────────────────────
 //
-// One AI call per iteration of the assessment loop.
+// One AI call per iteration. Try first, diagnose from failure.
 // The AI returns one of four action types — the loop handles each accordingly.
 
-// check — run a command on the machine to see what's installed / running
-export const CheckActionSchema = z.object({
-  type: z.literal('check'),
-  name: z.string(), // technical name, e.g. "Node.js"
-  description: z.string(), // plain english: what it does, e.g. "the software this app runs on"
-  reason: z.string(), // why we need this before the app can run — 1-2 sentences, non-technical
-  command: z.string(), // exact command to run, e.g. "node --version"
+// start — try running the app and see what happens
+export const StartActionSchema = z.object({
+  type: z.literal('start'),
+  command: z.string(), // e.g. "php -S localhost:8000"
+  reason: z.string(), // why this is the right thing to try — plain english
+  expectation: z.string(), // what the user should see if it works
 });
-export type CheckAction = z.infer<typeof CheckActionSchema>;
+export type StartAction = z.infer<typeof StartActionSchema>;
 
-// question — something only the user knows (can't be determined from files or machine)
-export const QuestionActionSchema = z.object({
-  type: z.literal('question'),
+// fix — one specific thing blocking the app from running
+export const FixActionSchema = z.object({
+  type: z.literal('fix'),
+  problem: z.string(), // what's wrong — plain english, specific to this project
+  installCommand: z.string().optional(), // run it for them if a single command can fix it
+  steps: z.array(z.string()), // fallback: plain english steps for the user to follow manually
+  verifyCommand: z.string().optional(), // re-run this after to confirm it worked
+});
+export type FixAction = z.infer<typeof FixActionSchema>;
+
+// ask — something only the user knows (can't be read from files or machine state)
+export const AskActionSchema = z.object({
+  type: z.literal('ask'),
   text: z.string(),
   options: z.array(z.string()).optional(), // if present: show as select. if absent: free text
 });
-export type QuestionAction = z.infer<typeof QuestionActionSchema>;
+export type AskAction = z.infer<typeof AskActionSchema>;
 
-// instruction — something needs installing or fixing before we can continue
-export const InstructionActionSchema = z.object({
-  type: z.literal('instruction'),
-  summary: z.string(), // e.g. "PHP isn't installed"
-  installCommand: z.string().optional(), // if present: offer to run this to fix it automatically
-  steps: z.array(z.string()), // fallback: plain english steps for the user to follow manually
-  verifyCommand: z.string().optional(), // if present: re-run this after to confirm it worked
+// done — the app is running
+export const DoneActionSchema = z.object({
+  type: z.literal('done'),
+  url: z.string().optional(), // where to open it, if applicable
+  notes: z.array(z.string()), // soft blockers still present — specific, never generic
 });
-export type InstructionAction = z.infer<typeof InstructionActionSchema>;
+export type DoneAction = z.infer<typeof DoneActionSchema>;
 
-// ready — everything needed is in place, time to start the app
-export const ReadyActionSchema = z.object({
-  type: z.literal('ready'),
-  startCommand: z.string(), // exact command to run, e.g. "npm start"
-  notes: z.array(z.string()), // soft blockers — what won't work and why (specific, not generic)
-});
-export type ReadyAction = z.infer<typeof ReadyActionSchema>;
-
-export const AssessmentActionSchema = z.discriminatedUnion('type', [
-  CheckActionSchema,
-  QuestionActionSchema,
-  InstructionActionSchema,
-  ReadyActionSchema,
+export const RunActionSchema = z.discriminatedUnion('type', [
+  StartActionSchema,
+  FixActionSchema,
+  AskActionSchema,
+  DoneActionSchema,
 ]);
-export type AssessmentAction = z.infer<typeof AssessmentActionSchema>;
+export type RunAction = z.infer<typeof RunActionSchema>;
 
 // ─── Mode ─────────────────────────────────────────────────────────────────────
 
@@ -103,10 +102,13 @@ export interface HistoryEntry {
   at: string;
 }
 
-export interface CheckEntry {
-  command: string;
-  output: string;
-  conclusion: string;
+// A single attempt in the run loop — what was tried, what happened, what the user said
+export interface RunAttempt {
+  type: 'start' | 'fix' | 'ask';
+  description: string; // plain english — what was tried or asked
+  command?: string; // the command, if one was run
+  output?: string; // raw stdout/stderr
+  userReport?: string; // what the user said happened
   at: string;
 }
 
@@ -136,5 +138,5 @@ export interface Session {
     synthesis: string | null;
   };
   history: HistoryEntry[];
-  checks: CheckEntry[];
+  attempts: RunAttempt[]; // full memory of everything tried in the run loop
 }
