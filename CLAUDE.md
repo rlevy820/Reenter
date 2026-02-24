@@ -130,22 +130,24 @@ Also: the graveyard of old projects is a source of pride, not shame. The user co
 
 **The flow:**
 1. Tool scans silently
-2. Outputs a plain english summary of what the project is (no confirmation needed — it already knows)
-3. Presents options for how to run it — each option is specific to this project, tells the user exactly what will happen in plain english
+2. Outputs a plain english summary of what the project is
+3. Claude reasons about what the actual realistic paths are for this specific project — not fixed slots
+4. Presents 1-3 options depending on what's genuinely possible
+5. User picks one, tool walks them through it step by step
 
-**Example output:**
-```
-This is a website you built — it has a front end you can
-see immediately, and a back end that handles user logins.
+**Options are derived, not templated:**
+- No hardcoded "simple / full / share" slots
+- Claude figures out what's actually possible first, then surfaces those as options
+- Blocked paths get flagged honestly ("this needs a VR headset — want instructions or just browse the code?")
+- If there's only one real option, show one. If there are three, show three. Never pad.
 
-How do you want to run it?
+**Examples of how options change by project type:**
+- Static website → "Open it in your browser right now" (one option)
+- PHP app with database → "Browse the code" or "Set the whole thing up (20 min)" (two options)
+- VR app → "This needs a headset — want setup instructions or just explore the code?" (two options)
+- Python data notebook → "Run it and see the output" or "Just read through it" (two options)
 
-> Just show me the front end (nothing to set up)
-  Run the whole thing — this will start the server and connect to the user database
-  Get it ready to share with someone — this will take a few steps
-```
-
-**Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never.
+**Key principle:** The tool does the technical thinking. The user makes the human decision. Specific always, generic never. Honest always — never pretend a path exists when it doesn't.
 
 ---
 
