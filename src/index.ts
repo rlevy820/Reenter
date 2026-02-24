@@ -2,7 +2,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
-import { runInterview } from './briefing/interview.js';
 import { MODES } from './options.js';
 import reenterSelect, { formatTextBlock, spin, withMargin } from './prompt.js';
 import { analyzeProject, generateSteps } from './scout/analyze.js';
@@ -81,16 +80,6 @@ async function main() {
   );
 
   session.plan.steps = steps;
-
-  process.stdout.write('\n');
-
-  // Briefing phase — build the shared picture before step 1
-  const confirmed = await runInterview(client, session);
-
-  if (!confirmed) {
-    process.stdout.write(formatTextBlock("No problem. Come back when you're ready."));
-    process.exit(0);
-  }
 
   // Walkthrough phase — coming next
   process.stdout.write(formatTextBlock('\x1b[90mWalkthrough coming next.\x1b[0m'));
