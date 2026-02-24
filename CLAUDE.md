@@ -154,58 +154,92 @@ The menu stays Browse / Run / MVP / Ship. The pipeline is handled internally —
 2. Menu: What's next — Browse / Run / MVP / Ship
 3. Walkthrough starts (Run as example):
    a. **Save starting point** — git pre-flight, always first (BUILT)
-   b. **Assessment** — AI reads project deeply, figures out what it needs to run, produces a plain english summary + any questions only the user can answer
-   c. **Machine check** — one consent moment: "Can I check what's installed on your machine?" If yes, runs silent checks and factors results into the plan
-   d. **Execution loop** — one step at a time, chat mode, consent before every action
+   b. **Deep scan** — read every file, feed full context to the loop (BUILT)
+   c. **Run loop** — try first, diagnose from failure (see below)
 
-**Assessment loop (step 2) design — locked:**
+---
 
-One loop. One AI call per iteration. Ends when AI says `ready`.
+## The Run Loop — Try First, Diagnose from Failure (Locked)
 
-Each AI call receives:
-- Project structure + key files (deep scan)
-- All checks run so far + their output
-- All questions answered so far
-- All skips + what was skipped
-- Mode (run / mvp / ship)
+**The principle:** A senior dev doesn't run a checklist before trying things. They just try it, read what breaks, fix that one thing, and try again. That's exactly what this loop does.
 
-Each AI call returns one of four action types:
+**The loop:**
+1. AI looks at the project and figures out the most likely start command
+2. Shows it with consent — runs it
+3. Waits 3-4 seconds:
+   - If it crashes → error is right there, move to fix
+   - If it's still running → it started. Tell user to open the URL, come back and report.
+4. Asks: "What happened?" — free text, or pick from:
+   - It's working
+   - Something looks off → free text
+   - It failed with an error → free text / paste
+5. AI reads the report, figures out the one thing blocking it, proposes a fix
+6. Fix it, try again
+7. Repeat until working
 
+**Memory — what the AI sees on every call:**
 ```
-check       — a command to run on the machine
-              { type, name, description, command, cwd }
-              name = technical name (e.g. "Node.js")
-              description = plain english: what it does (e.g. "the software this app runs on")
+Attempt 1: php -S localhost:8000
+Output: [stdout/stderr from the process]
+User reported: "page loads but I get a database connection error"
 
-question    — something only the user knows
-              { type, text, options? }
+Fix attempted: brew services start mysql
+Result: Formula not installed
 
-instruction — something needs installing or fixing
-              { type, summary, steps: string[] }
-              steps = numbered plain english instructions
-              after user is done: "Want me to check if that worked?" → re-runs original check
+Attempt 2: ...
+```
+Everything tried. Everything said. Full picture every call.
 
-ready       — everything needed is in place, start the app
-              { type, startCommand, notes: string[] }
-              notes = soft blockers — specific warnings about what won't work
+**Action types:**
+```
+start   — the command to try running the app
+          { type, command, reason, expectation }
+          reason = why this is the right thing to try
+          expectation = what the user should see if it works
+
+fix     — one thing blocking it
+          { type, problem, installCommand?, steps[], verifyCommand? }
+          installCommand = run it for them if possible
+          steps = fallback manual steps
+
+ask     — something only the user knows
+          { type, text, options? }
+
+done    — it's working
+          { type, url?, notes[] }
+          url = where to open it (if applicable)
+          notes = soft blockers still present — specific, never generic
 ```
 
-Skip handling: user can skip any check. AI warns specifically what that skip means — not generic.
+**After a `start` — the "what happened" moment:**
+Run the command. Wait 3-4 seconds. Then ask:
+```
+  What happened?
+  ❯ It's working
+    Something looks off
+    It failed with an error
+    [type what you saw]
+```
+Whatever the user types goes straight to the AI on the next call.
 
-Language rule: always `Name — plain phrase saying what it does`. Never vague metaphors.
-- ✓ "Node.js — the software this app runs on"
-- ✗ "the engine that runs this app"
+**For persistent servers** (php -S, npm start, flask run, etc.):
+- Spawn in subprocess, wait 3-4s for crash or stability
+- If stable: show URL, wait for user to check browser and report back
+- If crashed: error is right there, move to fix
+- Keep process alive while waiting for report
+- Kill it when they respond (whether working or not — they'll restart it themselves)
+
+**Key principle:** Work from the simplest solution. It's OK and expected that the first attempt fails — that failure IS the diagnosis. Never try to predict what's missing upfront.
 
 **Build tasks (in order):**
-
-1. **Deep scan** — expand `readKeyFiles` to find and read all config files (docker-compose, .env.example, Makefile, Procfile, .nvmrc, lock files, etc.) — feeds the AI better context
-2. **Zod schemas** — define the loop response types (`CheckAction`, `QuestionAction`, `InstructionAction`, `ReadyAction`) in `types.ts` — this is the contract everything else is built around
-3. **AI loop call** — Sonnet call in `src/walkthrough/assess.ts` that takes session state and returns the next action
-4. **Check runner** — `src/walkthrough/check.ts` — shows command + description + consent, runs it, captures output, stores in session
-5. **Instruction presenter** — shows numbered steps, then asks to verify, re-runs check if yes
-6. **Question presenter** — shows question + options or free text, stores answer in session
-7. **Loop orchestrator** — `src/walkthrough/assess.ts` — ties all the above together, runs until `ready`
-8. **Wire into index.ts** — replace walkthrough placeholder with the assessment loop
+1. **Redesign types** — replace old action schemas with `start`, `fix`, `ask`, `done`
+2. **New assess.ts** — Sonnet call, new action types, full attempt history as context
+3. **Start runner** — runs the command, waits 3-4s, handles crash vs stable
+4. **"What happened" prompt** — free text + presets, feeds answer back to loop
+5. **Fix presenter** — same pattern as old instruction (install command or manual steps)
+6. **Ask presenter** — same as old question presenter (already built, minor updates)
+7. **Loop orchestrator** — new loop.ts wiring all the above
+8. **Wire into index.ts**
 
 **Git pre-flight (locked):**
 - Always runs first, always shows "Saving your starting point" spinner
@@ -251,25 +285,21 @@ src/
 
 ## The Execution Pattern (locked)
 
-This pattern repeats throughout the entire walkthrough phase:
-
 ```
-AI knows what's needed for this step
+AI proposes the next thing to try — explains why in plain english
 ↓
-AI says why in plain english — short, specific, trustworthy
+User consents (or skips)
 ↓
-"Can I check if you have it? Run this:" [shows exact command]
+Command runs — output captured or streamed live
 ↓
-> Yes, run it
-  No, skip it
-  [type something else]
+"What happened?" — user reports in their own words (free text always available)
 ↓
-AI reads the real output and responds to what it actually found
+AI reads the real output + user report — responds to what actually happened
 ↓
-Move forward only when user confirms
+Next action. Repeat.
 ```
 
-Never assumes. Always checks. Always asks permission. Always shows what it's running and why.
+Never predicts. Never checklists. Always runs something real and reads what breaks.
 
 ---
 
@@ -290,14 +320,15 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 - [x] Git initialized
 - [x] Project structure and DevOps foundation set up
 - [x] Technical stack decided
-- [x] Scout phase — scan + summary + step generation
-- [x] Custom terminal UI (prompt.ts) — inline description on hover
-- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest (54 tests)
-- [x] CI/CD — GitHub Actions, runs build + lint + tests on push/PR
-- [x] Walkthrough step 1 — git pre-flight, "Saving your starting point" (BUILT)
-- [ ] Walkthrough step 2 — assessment: deep scan + AI figures out what's needed + machine check consent — **this is next**
-- [ ] Walkthrough step 3 — execution loop (chat mode, one step at a time, consent before action)
-- [ ] MVP and Ship stages (pipeline continues after Run)
+- [x] Scout phase — scan + summary
+- [x] Custom terminal UI (prompt.ts) — spinners, select, free text, all prompt primitives
+- [x] TypeScript migration — strict mode, Zod validation, tsup build, Biome, Vitest
+- [x] CI/CD — GitHub Actions, build + lint + tests on push/PR
+- [x] Git pre-flight — "Saving your starting point" (BUILT, locked)
+- [x] Deep scan — reads every file, feeds full context to the loop (BUILT)
+- [x] Run loop design — try first, diagnose from failure (DESIGNED, locked)
+- [ ] Run loop build — new action types, start runner, fix presenter, orchestrator — **this is next**
+- [ ] MVP and Ship stages
 - [ ] Browse mode
 - [ ] First-run API key setup flow
 - [ ] Global install (`reenter` from anywhere)
@@ -306,4 +337,4 @@ Never assumes. Always checks. Always asks permission. Always shows what it's run
 
 ## Next Step
 
-Walkthrough step 2: pre-flight assessment. The AI reads the project and surfaces what it actually needs to run — in plain english, sorted by tier. Hard blockers first, soft blockers noted but skippable for Run mode.
+Build the run loop. Start with redesigning the types (`start`, `fix`, `ask`, `done`), then build outward from there. Old files to gut/replace: `assess.ts`, `check.ts`, `instruct.ts`, `question.ts`, `loop.ts`. The old versions were a checklist-based design — replaced by try-first.
