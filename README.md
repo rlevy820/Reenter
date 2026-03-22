@@ -1,37 +1,42 @@
 # teachme
 
-A local tutor that reads your code and teaches you about it — one exchange at a time.
+A local tutor that reads your code and teaches you about it.
 
 ---
 
-## The Problem
+## The problem
 
-You're building something real. You hit a concept you don't fully understand — async, state, how a database actually connects to a backend. You search for answers and get walls of text, tutorials written for someone else, or explanations that assume things you don't know yet.
-
-What you actually want is a senior dev sitting next to you who has read your specific code and can explain exactly what's happening in plain english.
+When you hit a concept you don't understand, the usual answers are tutorials written for someone else or documentation that assumes you already know half of it. What actually helps is someone who has read your specific code and can explain what's happening in plain english — starting from the beginning, not the middle.
 
 ---
 
-## What It Does
-
-Point TeachMe at any project. Ask it anything. It reads your code first, then teaches you — not from a textbook, but from what's actually in front of you.
+## How it works
 
 ```
 $ cd my-project
 $ teachme "how does the auth flow work here"
 ```
 
-A browser opens. The tutor answers — short, plain english, one thing at a time. You ask follow-ups. If you don't follow an analogy, highlight it and dig in. When you're done with that tangent, type `/back` and you're where you left off.
+A browser opens. The tutor has already read your project. It answers your question directly — one concept at a time, grounded in what's actually in your code.
+
+Don't know where to start, you can run this as well:
+
+```
+$ cd my-project
+$ teachme
+```
+
+The tutor asks what you want to understand and goes from there.
 
 ---
 
-## How It Teaches
+## How it teaches
 
-- Assumes nothing — builds from first principles every time
-- Why before how — explains why something exists before explaining how it works
-- One concept at a time — never a wall of text, always a clear next beat
-- Grounded in your code — every explanation references what's actually in your project
-- Gets better over time — remembers what concepts you've struggled with across sessions
+Every explanation starts from first principles — nothing is assumed. The how and the why are detailed. Responses are short by design, with natural stopping points so you can ask follow-ups or change direction.
+
+If something doesn't land, highlight it. A tangent opens inline. Work through it, type `/back`, and you're where you left off.
+
+teachme keeps track of what concepts have given you trouble across sessions. Over time, it knows where to slow down for you specifically.
 
 ---
 
